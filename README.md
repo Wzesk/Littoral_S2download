@@ -3,6 +3,15 @@
 currently migrating functionality from theses notebooks:
 https://drive.google.com/drive/folders/1jkVuJzrKiYb_d1GstZRgSN9_ng9k3LZI?usp=sharing
 
+
+setup env:
+conda create --name littoral_pipeline python=3.10
+conda activate littoral_pipeline
+conda env update --file littoral_pipeline/environment.yml --prune
+
+
+started migration:
+
 The tario.py file is the first example, a class that has all the tar archive interactions.
 Other files will be:
 
