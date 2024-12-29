@@ -1,0 +1,16 @@
+name: littoral_pipeline
+channels:
+  - conda-forge
+dependencies:
+  - python==3.10.12
+  - pandas
+  - numpy
+  - pillow
+  - scikit-image
+  - geemap
+  - earthengine-api
+  - requests
+  - pip
+  - ipykernel
+  - pip:
+      - omnicloudmask==1.0.7
