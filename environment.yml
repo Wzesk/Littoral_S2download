@@ -11,5 +11,6 @@ dependencies:
   - earthengine-api
   - requests
   - pip
+  - ipykernel
   - pip:
       - omnicloudmask==1.0.7

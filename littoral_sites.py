@@ -1,20 +1,3 @@
-# import io
-# from io import BytesIO
-# import tarfile
-# import datetime
-# import os
-# import json
-# import pandas as pd
-# from PIL import Image
-# from skimage.morphology import binary_dilation, disk, remove_small_objects, binary_erosion
-# import tarfile
-# import requests
-# from pathlib import Path
-# from functools import partial
-# import rasterio as rio
-# import numpy as np
-# from matplotlib import pyplot as plt
-
 import io
 import os
 import json

@@ -2,6 +2,7 @@ import io
 from io import BytesIO
 import tarfile
 from PIL import Image
+import os
 
 class tar_io:
     def __init__(self,path):
