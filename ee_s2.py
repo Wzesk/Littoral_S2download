@@ -26,15 +26,26 @@
 # import requests
 # import numpy as np
 
-# import omnicloudmask
-# from omnicloudmask import (
-#     predict_from_load_func,
-#     predict_from_array,
-#     load_s2,
-# )
+import omnicloudmask
+from omnicloudmask import (
+    predict_from_load_func,
+    predict_from_array,
+    load_s2,
+)
 
-from littoral_pipeline import tario
-import geemap, ee
+from littoral_pipeline import tario,littoral_sites
+import ee#,geemap
+import os
+import pandas as pd
+from PIL import Image
+import io
+from io import BytesIO
+import datetime
+import os
+import json
+from skimage.morphology import binary_dilation, disk
+import requests
+import numpy as np
 
 
 def connect(project_id='ee-shorelinetracker'):
@@ -130,10 +141,10 @@ def process_collection_images(data, se2_col):
             cld = cld/np.max(cld)
             cld_3d = np.dstack((cld,cld,cld))
             cld_img = Image.fromarray((cld_3d * 255).astype(np.uint8))
-            rgnirtar = tar_io(rgnir_path)
+            rgnirtar = tario.tar_io(rgnir_path)
             rgnirtar.save_to_tar(nir_img,img_name + "_rgnir.png",overwrite=True)
             new_row['rgnir_download'] = True
-            cldtar = tar_io(cldmsk_path)
+            cldtar = tario.tar_io(cldmsk_path)
             cldtar.save_to_tar(cld_img,img_name + "_cld.png",overwrite=True)
             new_row['cld_calculation'] = True
 
@@ -150,7 +161,7 @@ def process_collection_images(data, se2_col):
     name = data["project_name"]
     date = datetime.datetime.now()
     date_str = date.strftime("%Y-%m-%d")
-    set_last_run(name, date_str)
+    littoral_sites.set_last_run(name, date_str)
     print("finished run:",name,date_str)
 
     return proj_track

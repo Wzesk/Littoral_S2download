@@ -1,35 +1,30 @@
+# import io
+# from io import BytesIO
+# import tarfile
+# import datetime
+# import os
+# import json
+# import pandas as pd
+# from PIL import Image
+# from skimage.morphology import binary_dilation, disk, remove_small_objects, binary_erosion
+# import tarfile
+# import requests
+# from pathlib import Path
+# from functools import partial
+# import rasterio as rio
+# import numpy as np
+# from matplotlib import pyplot as plt
+
 import io
-from io import BytesIO
-import tarfile
-import datetime
 import os
 import json
 import pandas as pd
-from PIL import Image
-from skimage.morphology import binary_dilation, disk, remove_small_objects, binary_erosion
-import tarfile
-import requests
-from pathlib import Path
-from functools import partial
-import rasterio as rio
-import numpy as np
-from matplotlib import pyplot as plt
+import ee
 
 def load_sites(path='littoral_pipeline/littoral_sites.csv'):
   #open the csv file as a dataframe
   sites = pd.read_csv(path)
   return sites
-
-  # spreadsheet = gc.open('littoral_analysis_sites')
-  # # Replace 'Sheet1' with the name of the sheet you want to read
-  # worksheet = spreadsheet.worksheet('sites')
-  # # Get all values from the worksheet
-  # rows = worksheet.get_all_values()
-  # # Convert the data to a Pandas DataFrame
-  # import pandas as pd
-  # df = pd.DataFrame.from_records(rows[1:], columns=rows[0]) # Assuming the first row is the header
-  # # Print the DataFrame
-  # return df
 
 def get_site_by_name(name):
   sites = load_sites()
@@ -48,7 +43,6 @@ def set_last_run(site_name, date):
   worksheet.update([sites.columns.values.tolist()] + sites.values.tolist())
   new_sites = load_sites()
   return new_sites
-
 
 def load_site_parameters(name,path):
   site_row = get_site_by_name(name)
