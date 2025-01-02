@@ -1,16 +1,22 @@
 name: littoral_pipeline
 channels:
   - conda-forge
+  - menpo
+  - meepio
 dependencies:
   - python==3.10.12
   - pandas
-  - numpy
+  - numpy==1.26.0
   - pillow
   - scikit-image
   - geemap
   - earthengine-api
   - requests
-  - pip
   - ipykernel
+  - opencv-python==4.10.0.84
+  - pytorch
+  - torchvision
+  - tqdm
+  - pip
   - pip:
-      - omnicloudmask==1.0.7
+    - huggingface-hub==0.25.2

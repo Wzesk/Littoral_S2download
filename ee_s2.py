@@ -68,14 +68,15 @@ def process_collection_images(data, se2_col):
 
 
     for i in range(length):
+        #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
-
 
         #get the name of the i image file from the collection
         img_name = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('system:index').getInfo()
 
         #normalize
         n_rgb = rgb/np.max(rgb)
+        
         #convert into an image
         rgb_img = Image.fromarray((n_rgb * 255).astype(np.uint8))
 
@@ -91,9 +92,6 @@ def process_collection_images(data, se2_col):
         # add row to table
         new_row = pd.DataFrame({'Index': [i], 'name': [img_name]})
         proj_track = pd.concat([proj_track, new_row], ignore_index=True)
-
-    #save proj_track to csv
-    proj_track.to_csv(path + "/" + "proj_track.csv", index=False)
 
     return proj_track
 
