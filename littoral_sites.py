@@ -18,15 +18,6 @@ def list_site_names():
   sites = load_sites()
   return sites['site_name'].tolist()
 
-def set_last_run(site_name, date):
-  sites = load_sites()
-  sites.loc[sites['site_name'] == site_name, 'last_run'] = date
-  spreadsheet = gc.open('littoral_analysis_sites')
-  worksheet = spreadsheet.worksheet('sites')
-  worksheet.update([sites.columns.values.tolist()] + sites.values.tolist())
-  new_sites = load_sites()
-  return new_sites
-
 def load_site_parameters(name,path):
   site_row = get_site_by_name(name)
   aoi_str = site_row['aoi'].values[0]
@@ -34,9 +25,8 @@ def load_site_parameters(name,path):
   aoi = json.loads(aoi_str)
   aoi_rec = ee.Geometry.Rectangle(aoi)
 
-  start = site_row['start'].values[0]
-  end = site_row['end'].values[0]
-  usable_percentage = float(site_row['usable_percentage'].values[0])
+  start = '2024-01-01'
+  end = '2024-12-31'
   proj_name = name
   path = path
 
@@ -44,16 +34,15 @@ def load_site_parameters(name,path):
   if not os.path.exists(save_path):
     os.makedirs(save_path)
 
-  proj_data = save_parameters_to_json(aoi, start, end, usable_percentage, proj_name, save_path)
+  proj_data = save_parameters_to_json(aoi, start, end, proj_name, save_path)
 
   return proj_data
 
-def save_parameters_to_json(aoi, start, end, usable_pixel_percentage, project_name, path):
+def save_parameters_to_json(aoi, start, end, project_name, path):
     data = {
         "aoi": aoi,
         "start_date": start,
         "end_date": end,
-        "usable_pixel_percentage": usable_pixel_percentage,
         "project_name": project_name,
         "path":path
     }
