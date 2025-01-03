@@ -1,5 +1,5 @@
 
-from littoral_pipeline import littoral_sites
+from littoral_S2download import littoral_sites
 import ee#,geemap
 import os
 import pandas as pd
