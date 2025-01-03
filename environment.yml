@@ -13,10 +13,11 @@ dependencies:
   - earthengine-api
   - requests
   - ipykernel
-  - opencv-python==4.10.0.84
+  - conda-forge::opencv
   - pytorch
   - torchvision
   - tqdm
+  - conda-forge::ultralytics
   - pip
   - pip:
     - huggingface-hub==0.25.2

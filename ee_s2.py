@@ -14,7 +14,7 @@ import requests
 import numpy as np
 
 
-def connect(project_id='ee-shorelinetracker'):#'useful-theory-442820-q8'):
+def connect(project_id='useful-theory-442820-q8'):
     try:
         ee.Initialize(project=project_id)
     except Exception as e:
