@@ -1,4 +1,4 @@
-# Littoral-00-S2download
+# Littoral-S2download
 
 currently migrating functionality from theses notebooks:
 https://drive.google.com/drive/folders/1jkVuJzrKiYb_d1GstZRgSN9_ng9k3LZI?usp=sharing
