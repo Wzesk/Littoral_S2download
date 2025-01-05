@@ -1,0 +1,69 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "littoral-s2download"
+version = "0.1.0"
+description = "Sentinel-2 data extraction module for Littoral's shoreline analysis pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [
+    { name = "Littoral", email = "shorelinetracker@gmail.com" }
+]
+dependencies = [
+    # Core dependencies
+    "pandas",
+    "numpy",
+    "pillow",
+    "scikit-image",
+    "geemap",
+    "earthengine-api",
+    "requests",
+    "omnicloudmask==1.0.7",
+    "ipykernel",
+    # Google Sheets integration
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-auth-httplib2",
+    "gspread",
+    # Development tools
+    "pytest>=7.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "ruff>=0.1.0",
+    "black>=23.0",
+    "pytest>=7.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/littoral"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "N",  # pep8-naming
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
