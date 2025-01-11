@@ -21,9 +21,9 @@ def connect(project_id='useful-theory-442820-q8'):
         ee.Authenticate()
         ee.Initialize(project=project_id)
 
-def get_image_collection(data,cloudy_pixel_percentage=0.5):
+def get_image_collection(data,max_cloudy_pixel_percentage=0.5):
     aoi_rec = ee.Geometry.Rectangle(data["aoi"])
-    se2_col = ee.ImageCollection('COPERNICUS/S2').filterDate(data["start_date"],data["end_date"]).filterBounds(aoi_rec).filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloudy_pixel_percentage))
+    se2_col = ee.ImageCollection('COPERNICUS/S2').filterDate(data["start_date"],data["end_date"]).filterBounds(aoi_rec).filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', max_cloudy_pixel_percentage))
     return se2_col
 
 def retrieve_rgb_nir_from_collection(data, se2_col,index):
@@ -47,8 +47,7 @@ def retrieve_rgb_nir_from_collection(data, se2_col,index):
 
     return rgb_img_arr , nir_img_arr 
 
-
-def process_collection_images(data, se2_col):
+def process_collection_images(data, se2_col, max_images=3):
     aoi = ee.Geometry.Rectangle(data["aoi"])
     name = data["project_name"]
     path = data["path"]
@@ -56,8 +55,9 @@ def process_collection_images(data, se2_col):
 
     #get a max of 3 imagers per site
     length = se2_col.size().getInfo()
-    if length > 2:
-        length = 3
+    if max_images > 0:
+        if length > max_images:
+            length = max_images
 
     #if path does not exist, creat it
     if not os.path.exists(path):
