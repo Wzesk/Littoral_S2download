@@ -135,8 +135,10 @@ def load_site_parameters_cg(name, save_path, load_path):
     ----------
     name : str
         Site name to load parameters for
-    path : str
+    save_path : str
         Base path for saving site data
+    load_path : str
+        Path to table of site data
 
     Returns
     -------
@@ -213,30 +215,8 @@ def load_site_parameters(name, path):
     -----
     Creates output directory if it doesn't exist.
     """
-    site_row = get_site_by_name(name)
-    aoi_str = site_row["aoi"].values[0]
-    aoi_str = "".join(aoi_str.split())
-    aoi = json.loads(aoi_str)
-    aoi_rec = ee.Geometry.Rectangle(aoi)
-
-    start = site_row["start"].values[0]
-    end = site_row["end"].values[0]
-    try:
-        max_cloudy_pixel_percentage = float(site_row["max_cloudy_pixel_percentage"].values[0])
-    except:
-        max_cloudy_pixel_percentage = 10
-    proj_name = name
-    path = path
-
-    save_path = path + "/" + proj_name
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-
-    proj_data = save_parameters_to_json(
-        aoi, start, end, max_cloudy_pixel_percentage, proj_name, save_path
-    )
-
-    return proj_data
+    load_path = path + '/littoral_sites.csv'
+    return load_site_parameters_cg(name, path, load_path)
 
 
 def save_parameters_to_json(
