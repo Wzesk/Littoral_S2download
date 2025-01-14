@@ -458,7 +458,8 @@ def process_collection_images_totar(data: Dict, se2_col: ee.ImageCollection) -> 
     proj_track.to_csv(path + "/" + "proj_track.csv", index=False)
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-    littoral_sites.set_last_run(name, date_str)
+    site_path = path.replace(name,"littoral_sites.csv")
+    littoral_sites.set_last_run(name, date_str,site_path)
     print(f"finished run: {name} {date_str}")
 
     return proj_track
