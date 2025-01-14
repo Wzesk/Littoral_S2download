@@ -8,7 +8,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             73.14249432985883,
             5.2376483570647
           ]
-        ]",1/1/16,12/31/24,10,11/26/24
+        ]",01/01/16,12/31/24,10,11/26/24
 2,Vakharu,"[ [
               73.49705943626319,
               4.26141802708446
@@ -17,7 +17,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
               73.50270164253178,
               4.266148717007908
             ]
-          ]",1/1/16,12/17/24,10,12/18/24
+          ]",01/01/16,12/17/24,10,12/18/24
 3,Fuvahmulah,"[
           [
             73.40485831620961,
@@ -27,7 +27,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             73.4460947310398,
             -0.27336352803042985
           ]
-        ]",1/1/23,12/9/24,10,12/10/24
+        ]",01/01/23,12/9/24,10,12/10/24
 4,Fenfushi,"[
           [
             72.898,
@@ -37,7 +37,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             72.905,
             5.3865
           ]
-        ]",12/1/24,12/30/24,10,
+        ]",12/01/24,12/30/24,10,
 5,Bodufen,"[
           [
             72.9211,
@@ -47,7 +47,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             72.9259,
             5.6315
           ]
-        ]",12/1/24,12/30/24,10,
+        ]",12/01/24,12/30/24,10,
 6,Goiymaru,"[
           [
             72.884,
@@ -57,7 +57,7 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             72.891,
             5.632
           ]
-        ]",12/1/24,12/30/24,10,
+        ]",12/01/24,12/30/24,10,
 7,Lun’dhufushi,"[
           [
             72.981,
@@ -67,4 +67,4 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run
             72.992,
             5.647
           ]
-        ]",12/1/24,12/30/24,10,
+        ]",12/01/24,12/30/24,10,
