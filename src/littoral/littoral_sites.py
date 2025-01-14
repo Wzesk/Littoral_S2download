@@ -128,7 +128,7 @@ def set_last_run(site_name, date, path="littoral_pipeline/littoral_sites.csv"):
     return sites
 
 
-def load_site_parameters_cg(name, save_path, load_path, start='2024-01-01',end='2024-12-31'):
+def load_site_parameters_cg(name, save_path, load_path):
     """Load and prepare site parameters for processing (cg demo version)
 
     Parameters
@@ -164,6 +164,8 @@ def load_site_parameters_cg(name, save_path, load_path, start='2024-01-01',end='
     aoi = json.loads(aoi_str)
     aoi_rec = ee.Geometry.Rectangle(aoi)
 
+    start = site_row["start"].values[0]
+    end = site_row["end"].values[0]
     try:
         max_cloudy_pixel_percentage = float(site_row["max_cloudy_pixel_percentage"].values[0])
     except:
