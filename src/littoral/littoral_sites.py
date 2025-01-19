@@ -165,7 +165,8 @@ def load_site_parameters_cg(name, save_path, load_path):
     aoi_str = site_row['aoi'].values[0]
     aoi_str = "".join(aoi_str.split())
     aoi = json.loads(aoi_str)
-    aoi_rec = ee.Geometry.Rectangle(aoi)
+    
+    periodic = site_row["periodic"].values[0]
 
     start = site_row["start"].values[0]
     end = site_row["end"].values[0]
@@ -181,7 +182,7 @@ def load_site_parameters_cg(name, save_path, load_path):
         os.makedirs(save_path)
 
     proj_data = save_parameters_to_json(
-        aoi, start, end, max_cloudy_pixel_percentage, proj_name, save_path
+        aoi, start, end, max_cloudy_pixel_percentage, proj_name, save_path, periodic
         )
 
     return proj_data
@@ -221,7 +222,7 @@ def load_site_parameters(name, path):
 
 
 def save_parameters_to_json(
-    aoi, start, end, max_cloudy_pixel_percentage, project_name, path
+    aoi, start, end, max_cloudy_pixel_percentage, project_name, path,periodic
 ):
     """Save site parameters to JSON file.
 
@@ -252,6 +253,7 @@ def save_parameters_to_json(
         "max_cloudy_pixel_percentage": max_cloudy_pixel_percentage,
         "project_name": project_name,
         "path": path,
+        "periodic": str(periodic),
     }
     save_path = path + "/" + project_name + ".json"
     with open(save_path, "w") as json_file:
