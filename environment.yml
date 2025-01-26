@@ -12,5 +12,6 @@ dependencies:
   - requests
   - pip
   - ipykernel
+  - simplification
   - pip:
       - omnicloudmask==1.0.7
