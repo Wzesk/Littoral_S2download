@@ -326,10 +326,17 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     #create a new pandas dataframe with the columns: Index, name, status,usable_percentage
     proj_track = pd.DataFrame(columns=['Index', 'name','rgb path','nir path'])
 
+    #get landsat for coregistration reference
+    l9_col = get_landsat_coreg(data)
+    print(f"landsat count = {l9_col.size().getInfo()}")
+    retrieve_tiff_from_collection(data, l9_col, 0, path + "/l9tiffs")
+
 
     for i in range(length):
         #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
+        #get a tiff with all bands to calculate coregistration offsets
+        retrieve_tiff_from_collection(data, se2_col,i, path + "/tiffs")
 
         #get the name of the i image file from the collection
         img_name = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('system:index').getInfo()
@@ -463,3 +470,42 @@ def process_collection_images_totar(data: Dict, se2_col: ee.ImageCollection) -> 
     print(f"finished run: {name} {date_str}")
 
     return proj_track
+
+
+def retrieve_tiff_from_collection(data, se2_col,index,folder_path):
+
+  aoi = ee.Geometry.Rectangle(data["aoi"])
+
+  # expand the aoi by 0.1 degrees to get more pixels to co-register
+  aoi = aoi.buffer(0.1)
+
+  tiff_collection = ee.Image(se2_col.toList(se2_col.size()).get(index))
+  url = tiff_collection.getDownloadUrl({
+    'region': aoi,
+    'scale': 10,
+    'format': 'GEO_TIFF'
+  })
+
+  response = requests.get(url)
+
+  if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
+
+  tiff_name = str(index) + ".tif"
+  tiff_save_path = os.path.join(folder_path, tiff_name)
+
+  with open(tiff_save_path, 'wb') as fd:
+    fd.write(response.content)
+
+  return data
+
+
+def get_landsat_coreg(data):
+    aoi_rec = ee.Geometry.Rectangle(data["aoi"])
+    #expand the aoi by 0.1 degrees
+    aoi_rec = aoi_rec.buffer(0.1)
+
+    landsat_col = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").filterDate("2021-01-01",data["end_date"]).filterBounds(aoi_rec)
+    landsat_col.sort('CLOUD_COVER')
+
+    return landsat_col
