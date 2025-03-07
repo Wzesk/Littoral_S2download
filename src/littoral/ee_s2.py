@@ -490,8 +490,10 @@ def retrieve_tiff_from_collection(data, se2_col,index,folder_path):
 
   if not os.path.exists(folder_path):
     os.makedirs(folder_path)
+    
+  img_name = ee.Image(se2_col.toList(se2_col.size()).get(index)).get('system:index').getInfo()
 
-  tiff_name = str(index) + ".tif"
+  tiff_name = img_name + ".tif"
   tiff_save_path = os.path.join(folder_path, tiff_name)
 
   with open(tiff_save_path, 'wb') as fd:
