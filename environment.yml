@@ -15,3 +15,4 @@ dependencies:
   - simplification
   - pip:
       - omnicloudmask==1.0.7
+      - pytmd==2.1.9
