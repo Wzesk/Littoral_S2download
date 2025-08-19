@@ -483,7 +483,17 @@ def retrieve_tiff_from_collection(data, se2_col,index,folder_path):
   aoi_rec = aoi.buffer(2600)
 
   tiff_collection = ee.Image(se2_col.toList(se2_col.size()).get(index))
+ 
+  # Dynamically get the list of all band names from that image
+  all_bands = tiff_collection.bandNames()
+  print('All available bands:', all_bands.getInfo())
+
+  coreg_bands = all_bands.slice(1, 4)
+  coreg_band_names = coreg_bands.getInfo()
+  print('Bands selected for download:', coreg_band_names)
+    
   url = tiff_collection.getDownloadUrl({
+    'bands':coreg_band_names,
     'region': aoi_rec,
     'scale': 10,
     'format': 'GEO_TIFF'
