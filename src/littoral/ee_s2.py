@@ -240,14 +240,7 @@ def retrieve_rgb_nir_from_collection(data, se2_col,index):
         - np.ndarray : nir bands
     """
 
-    aoi = ee.Geometry.Rectangle(data["aoi"])
-    #########################################################################################
-    #for coregistration we need larger images.  Testing out setting a min image size
-    TARGET_DIMENSION_METERS = 5120
-    aoi = expand_bbox_to_size(aoi, TARGET_DIMENSION_METERS)
-    print("expanding AOI to min size for coregistration")
-    #########################################################################################
-    
+    aoi = ee.Geometry.Rectangle(data["aoi"])    
 
     rgb_nir = ['B4','B3','B2','B8'] # blue is 'B2'
     rg_nir_img = ee.Image(se2_col.toList(se2_col.size()).get(index))#.select(rg_nir)
@@ -338,7 +331,6 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     l9_col = get_landsat_coreg(data)
     print(f"landsat count = {l9_col.size().getInfo()}")
     retrieve_tiff_from_collection(data, l9_col, 0, path + "/l9tiffs")
-
 
     for i in range(length):
         #get two arrays from each s2 image, one for rgb and one for nir
@@ -487,12 +479,12 @@ def retrieve_tiff_from_collection(data, se2_col,index,folder_path):
 
   aoi = ee.Geometry.Rectangle(data["aoi"])
 
-  # expand the aoi by 0.1 degrees to get more pixels to co-register
-  aoi = aoi.buffer(0.1)
+  # expand the aoi by 2600m to get more pixels to co-register
+  aoi_rec = aoi.buffer(2600)
 
   tiff_collection = ee.Image(se2_col.toList(se2_col.size()).get(index))
   url = tiff_collection.getDownloadUrl({
-    'region': aoi,
+    'region': aoi_rec,
     'scale': 10,
     'format': 'GEO_TIFF'
   })
@@ -515,68 +507,11 @@ def retrieve_tiff_from_collection(data, se2_col,index,folder_path):
 
 def get_landsat_coreg(data):
     aoi = ee.Geometry.Rectangle(data["aoi"])
-    #########################################################################################
-    #for coregistration we need larger images.  Testing out setting a min image size
-    TARGET_DIMENSION_METERS = 5120
-    aoi = expand_bbox_to_size(aoi, TARGET_DIMENSION_METERS)
-    print("expanding AOI to min size for coregistration")
-    #########################################################################################
     
-    #expand the aoi by 0.1 degrees
-    aoi_rec = aoi.buffer(0.1)
+    # expand the aoi by 2600m to get more pixels to co-register
+    aoi_rec = aoi.buffer(2600)
 
     landsat_col = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").filterDate("2021-01-01",data["end_date"]).filterBounds(aoi_rec)
-    landsat_col.sort('CLOUD_COVER')
+    landsat_sorted = landsat_col.sort('CLOUD_COVER')
 
-    return landsat_col
-
-
-def expand_bbox_to_size(aoi: ee.Geometry, target_size_m=5120) -> ee.Geometry:
-  """Expands a Google Earth Engine Geometry until its bounding box dimensions
-  are at least a target size in meters.
-
-  Args:
-    aoi: The input ee.Geometry (e.g., a Rectangle or Polygon).
-    target_size_m: The target minimum dimension (width and height) in meters.
-
-  Returns:
-    A new ee.Geometry.Rectangle that is at least the target size.
-  """
-  # Ensure we are working with the bounding box of the input geometry.
-  bounds = aoi.bounds()
-
-  # Get the coordinates of the bounding box corners.
-  coords = ee.List(bounds.coordinates().get(0))
-  x_coords = coords.map(lambda p: ee.List(p).get(0))
-  y_coords = coords.map(lambda p: ee.List(p).get(1))
-
-  # Calculate the min/max lat/lon.
-  lon_min = ee.Number(x_coords.reduce(ee.Reducer.min()))
-  lon_max = ee.Number(x_coords.reduce(ee.Reducer.max()))
-  lat_min = ee.Number(y_coords.reduce(ee.Reducer.min()))
-  lat_max = ee.Number(y_coords.reduce(ee.Reducer.max()))
-
-  # Create lines to measure the current width and height in meters.
-  # The .length() method calculates the geodesic length.
-  current_width = ee.Geometry.LineString([
-      [lon_min, lat_min],
-      [lon_max, lat_min]
-  ]).length()
-
-  current_height = ee.Geometry.LineString([
-      [lon_min, lat_min],
-      [lon_min, lat_max]
-  ]).length()
-
-  # Calculate the difference needed for each dimension.
-  # Use .max(0) to ensure we don't get a negative buffer if it's already large enough.
-  width_diff = ee.Number(target_size_m).subtract(current_width).max(0)
-  height_diff = ee.Number(target_size_m).subtract(current_height).max(0)
-
-  # The buffer is applied to all sides, so we only need half the difference.
-  # We take the maximum of the two required buffer distances to ensure both dimensions are met.
-  buffer_dist_m = width_diff.divide(2).max(height_diff.divide(2))
-
-  # Apply the buffer and get the new bounding box.
-  # The 'maxError' parameter is set to 1 meter for precision.
-  return aoi.buffer(buffer_dist_m, 1).bounds()
+    return landsat_sorted
