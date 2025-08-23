@@ -13,6 +13,13 @@ dependencies:
   - pip
   - ipykernel
   - simplification
+  - opencv
+  - arosics
+  - gdal 
+  - coastsat-package 
+  - rasterio 
+  - tqdm
+  - sqlite
   - pip:
       - omnicloudmask==1.0.7
       - pytmd==2.1.9
