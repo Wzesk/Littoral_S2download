@@ -330,13 +330,13 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     #get landsat for coregistration reference
     l9_col = get_landsat_coreg(data)
     print(f"landsat count = {l9_col.size().getInfo()}")
-    retrieve_tiff_from_collection(data, l9_col, 0, path + "/l9tiffs")
+    retrieve_tiff_from_collection(data, l9_col, 0, path + "/coreg/reference")
 
     for i in range(length):
         #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
         #get a tiff with all bands to calculate coregistration offsets
-        retrieve_tiff_from_collection(data, se2_col,i, path + "/tiffs")
+        retrieve_tiff_from_collection(data, se2_col,i, path + "/coreg/targets")
 
         #get the name of the i image file from the collection
         img_name = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('system:index').getInfo()
@@ -361,6 +361,32 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
         # add row to table
         new_row = pd.DataFrame({'Index': [i], 'name': [img_name], 'rgb path': [rgb_path], 'nir path': [nir_path]})
         proj_track = pd.concat([proj_track, new_row], ignore_index=True)
+        
+        
+        #add coregistration settings
+        coreg_settings = {
+          "coregister_settings": {
+            "ws": [256, 256],
+            "nodata": [0, 0],
+            "max_shift": 100,
+            "binary_ws": False,
+            "progress": False,
+            "v": False,
+            "ignore_errors": True,
+            "fmt_out": "GTiff"
+          },
+          "filtering_settings": {
+            "shift_reliability": 40,
+            "window_size": 50,
+            "max_shift_meters": 250,
+            "filter_z_score": True,
+            "filter_z_score_filter_passed_only": False,
+            "z_score_threshold": 2
+          }
+        }
+        import json
+        with open(path + "/coreg/coreg_settings.json", "w") as f:
+            json.dump(coreg_settings, f, indent=2)
 
     return proj_track
 
