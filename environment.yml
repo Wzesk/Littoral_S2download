@@ -20,6 +20,17 @@ dependencies:
   - rasterio 
   - tqdm
   - sqlite
+  - matplotlib
+  - pyproj
+  - shapely
+  - tifffile
+  - huggingface_hub
+  - pyyaml
+  - segmentation-models-pytorch
+  - six
+  - torchmetrics
+  - transformers
+  - wandb
   - pip:
       - omnicloudmask==1.0.7
       - pytmd==2.1.9
