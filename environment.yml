@@ -1,6 +1,7 @@
 name: littoral_pipeline
 channels:
   - conda-forge
+  - orbingol
 dependencies:
   - python==3.10.12
   - pandas
@@ -31,6 +32,9 @@ dependencies:
   - torchmetrics
   - transformers
   - wandb
+  - ultralytics
+  - geomdl
   - pip:
       - omnicloudmask==1.0.7
       - pytmd==2.1.9
+      - aquarel
