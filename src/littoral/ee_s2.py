@@ -330,13 +330,27 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     #get landsat for coregistration reference
     l9_col = get_landsat_coreg(data)
     print(f"landsat count = {l9_col.size().getInfo()}")
-    retrieve_tiff_from_collection(data, l9_col, 0, path + "/coreg/reference")
+
+    # if subfolders do not exist, create them
+    if not os.path.exists(path + "/reference"):
+        os.makedirs(path + "/reference")
+    # if target folder does not exist, create it
+    if not os.path.exists(path + "/targets"):
+        os.makedirs(path + "/targets")
+    # if rawrgb folder does not exist, create it
+    if not os.path.exists(path + "/rawrgb"):
+        os.makedirs(path + "/rawrgb")
+    # if rawnir folder does not exist, create it
+    if not os.path.exists(path + "/rawnir"):
+        os.makedirs(path + "/rawnir")
+
+    retrieve_tiff_from_collection(data, l9_col, 0, path + "/reference")
 
     for i in range(length):
         #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
         #get a tiff with all bands to calculate coregistration offsets
-        retrieve_tiff_from_collection(data, se2_col,i, path + "/coreg/targets")
+        retrieve_tiff_from_collection(data, se2_col,i, path + "/targets")
 
         #get the name of the i image file from the collection
         img_name = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('system:index').getInfo()
@@ -353,13 +367,16 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
         nir_img = Image.fromarray((n_nir * 255).astype(np.uint8))
 
         #save images to png
-        rgb_path = path + "/" + img_name + "_rgb.png"
+        rgb_path = path + "/rawrgb/" + img_name + "_rgb.png"
         rgb_img.save(rgb_path)
-        nir_path = path + "/" + img_name + "_nir.png"
+        nir_path = path + "/rawnir/" + img_name + "_nir.png"
         nir_img.save(nir_path)
 
+        # get cloud cover percentages for collection images
+        cloudy_pixel_percentage = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('CLOUDY_PIXEL_PERCENTAGE').getInfo()
+
         # add row to table
-        new_row = pd.DataFrame({'Index': [i], 'name': [img_name], 'rgb path': [rgb_path], 'nir path': [nir_path]})
+        new_row = pd.DataFrame({'Index': [i], 'name': [img_name], 'rgb path': [rgb_path], 'nir path': [nir_path], 'reference_path': [path + "/reference"], 'target_path': [path + "/targets"], 'cloudy_pixel_percentage': [cloudy_pixel_percentage]})
         proj_track = pd.concat([proj_track, new_row], ignore_index=True)
         
         
@@ -385,11 +402,79 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
           }
         }
         import json
-        with open(path + "/coreg/coreg_settings.json", "w") as f:
+        with open(path + "/coreg_settings.json", "w") as f:
             json.dump(coreg_settings, f, indent=2)
 
     return proj_track
 
+
+def get_cloud_cover_percentages_fom_collection(data, se2_col):
+    """Get cloud cover percentages from image collection.
+
+    Parameters
+    ----------
+    data : dict
+        Configuration dictionary containing:
+        - aoi : list
+            Area of interest coordinates
+        - project_name : str
+            Name of the project
+        - path : str
+            Output directory path
+        - usable_pixel_percentage : float
+            Minimum percentage of usable pixels
+    se2_col : ee.ImageCollection
+        Sentinel-2 image collection
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with image names and their cloud cover percentages
+
+    Notes
+    -----
+    Saves results to CSV file.
+    """
+    name = data["project_name"]
+    path = data["path"]
+    length = se2_col.size().getInfo()
+
+    # if path does not exist, create it
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    # create tracking dataframe
+    columns = [
+        "Index",
+        "name",
+        "cloudy_pixel_percentage"
+    ]
+    cloud_cover = pd.DataFrame(columns=columns)
+
+    for i in range(length):
+        # get image name from collection
+        img_name = (
+            ee.Image(se2_col.toList(se2_col.size()).get(i))
+            .get("system:index")
+            .getInfo()
+        )
+        cloudy_pixel_percentage = (
+            ee.Image(se2_col.toList(se2_col.size()).get(i))
+            .get("CLOUDY_PIXEL_PERCENTAGE")
+            .getInfo()
+        )
+        new_row = pd.DataFrame(
+            {
+                "Index": [i],
+                "name": [img_name],
+                "cloudy_pixel_percentage": [cloudy_pixel_percentage]
+            }
+        )
+
+        # add row to table
+        cloud_cover = pd.concat([cloud_cover, new_row], ignore_index=True)
+
+    return proj_track
 
 def process_collection_images_totar(data: Dict, se2_col: ee.ImageCollection,site_path='') -> pd.DataFrame:
     """Batch process multiple images from collection.
