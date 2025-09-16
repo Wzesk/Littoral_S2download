@@ -61,6 +61,85 @@ def connect(project_id: str = "useful-theory-442820-q8") -> None:
         ee.Initialize(project=project_id)
 
 
+def get_filtered_image_collection(
+    data: Dict,
+    valid_pixel_threshold: float = 75.0
+) -> ee.ImageCollection:
+    """Retrieve filtered Sentinel-2 image collection.
+
+    This function filters for date, location, and cloud cover, and also
+    removes images that are mostly black (zero values) by calculating the
+    percentage of valid pixels within the AOI.
+
+    Parameters
+    ----------
+    data : dict
+        Configuration dictionary containing:
+        - aoi : list
+            Area of interest coordinates [x1, y1, x2, y2]
+        - start_date : str
+            Start date for image collection
+        - end_date : str
+            End date for image collection
+        - cloudy_pixel_percentage : int
+            Maximum cloud coverage percentage
+    valid_pixel_threshold : float, optional
+        The minimum percentage of valid (non-zero) pixels an image must have
+        within the AOI to be included, by default 95.0.
+
+    Returns
+    -------
+    ee.ImageCollection
+        Filtered collection of Sentinel-2 images
+
+    Examples
+    --------
+    >>> ee.Initialize() # Make sure to initialize the library.
+    >>> data = {
+    ...     "aoi": [-122.5, 37.7, -122.4, 37.8],
+    ...     "start_date": "2023-01-01",
+    ...     "end_date": "2023-12-31",
+    ...     "max_cloudy_pixel_percentage": 10
+    ... }
+    >>> collection = get_image_collection(data, valid_pixel_threshold=90)
+    """
+    aoi_rec = ee.Geometry.Rectangle(data["aoi"])
+
+    # Initial filtering based on metadata
+    se2_col = (
+        ee.ImageCollection("COPERNICUS/S2")
+        .filterDate(data["start_date"], data["end_date"])
+        .filterBounds(aoi_rec)
+        .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", data["max_cloudy_pixel_percentage"]))
+    )
+
+    # Function to calculate the percentage of valid pixels for an image
+    def calculate_valid_pixels(image):
+        # Select a band (e.g., B2) and create a mask of non-zero pixels.
+        # unmask(0) replaces masked pixels with 0, then gt(0) creates a
+        # binary mask where valid pixels are 1 and zero/masked pixels are 0.
+        valid_mask = image.select('B2').unmask(0).gt(0)
+
+        # Use reduceRegion to calculate the percentage of valid pixels.
+        stats = valid_mask.reduceRegion(
+            reducer=ee.Reducer.mean(),
+            geometry=aoi_rec,
+            scale=100,  # Use a coarser scale for efficiency
+            maxPixels=1e9
+        )
+        # The mean of a binary mask is the proportion of 1s.
+        # Multiply by 100 to get a percentage.
+        valid_percentage = ee.Number(stats.get('B2')).multiply(100)
+        return image.set('valid_percentage', valid_percentage)
+
+    # Map the function over the collection and filter by the new property
+    filtered_col = se2_col.map(calculate_valid_pixels).filter(
+        ee.Filter.gte('valid_percentage', valid_pixel_threshold)
+    )
+
+    return filtered_col
+
+
 def get_image_collection(
     data: Dict
 ) -> ee.ImageCollection:
@@ -314,7 +393,7 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     path = data["path"]
     threshold = 1
 
-    #get a max of 3 imagers per site
+    #set a max of images per site
     length = se2_col.size().getInfo()
     if max_images > 0:
         if length > max_images:
@@ -345,8 +424,16 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
         os.makedirs(path + "/rawnir")
 
     retrieve_tiff_from_collection(data, l9_col, 0, path + "/reference")
-
+    
     for i in range(length):
+        #check if image is all zeros
+        img = ee.Image(se2_col.toList(se2_col.size()).get(i))
+        stats = img.reduceRegion(reducer=ee.Reducer.anyNonZero(), geometry=ee.Geometry.BBox(*data['aoi']), scale=10)
+        has_data = stats.get('B4')
+        if has_data == 0:
+            print(f"Image {i} is all zeros.")
+            continue
+
         #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
         #get a tiff with all bands to calculate coregistration offsets
