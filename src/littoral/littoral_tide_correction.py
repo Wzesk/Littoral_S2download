@@ -228,8 +228,167 @@ def model_tides(
     df.set_index("dates")
     return df
 
-
-
+def apply_tidal_corrections_to_shorelines(filtered_shoreline_files, shoreline_path, tidal_corrections_path, output_folder="TIDAL_CORRECTED"):
+    """
+    Apply tidal corrections to filtered shoreline files using spline fitting and normal vectors.
+    
+    Parameters:
+    -----------
+    filtered_shoreline_files : list
+        List of filtered shoreline CSV file names
+    shoreline_path : str
+        Path to the directory containing shoreline files
+    tidal_corrections_path : str
+        Path to the CSV file containing tidal corrections data
+    output_folder : str
+        Name of the output folder for tidal corrected shorelines
+        
+    Returns:
+    --------
+    list : Paths to the tidal corrected shoreline files
+    """
+    import numpy as np
+    import pandas as pd
+    import os
+    from geomdl import BSpline
+    from geomdl import utilities
+    from datetime import datetime
+    
+    # Load tidal corrections data
+    tidal_df = pd.read_csv(tidal_corrections_path)
+    print(f"Loaded tidal corrections with {len(tidal_df)} entries")
+    
+    # Create output directory
+    output_dir = os.path.join(os.path.dirname(shoreline_path), output_folder)
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Created output directory: {output_dir}")
+    
+    corrected_files = []
+    
+    for i, shoreline_file in enumerate(filtered_shoreline_files):
+        try:
+            print(f"Processing {i+1}/{len(filtered_shoreline_files)}: {shoreline_file}")
+            
+            # Load shoreline data
+            csv_path = os.path.join(shoreline_path, shoreline_file)
+            df = pd.read_csv(csv_path)
+            
+            # Extract coordinates (assuming xm, ym columns from geotransform)
+            if 'xm' in df.columns and 'ym' in df.columns:
+                x_coords = df['xm'].values
+                y_coords = df['ym'].values
+            else:
+                x_coords = df.iloc[:, 0].values
+                y_coords = df.iloc[:, 1].values
+            
+            # Skip if insufficient points
+            if len(x_coords) < 4:
+                print(f"  Skipping {shoreline_file}: insufficient points ({len(x_coords)})")
+                continue
+                
+            # Extract date from filename for tidal correction lookup
+            # Assuming filename format contains date like: YYYYMMDD...
+            try:
+                date_str = shoreline_file[:8]  # First 8 characters as date
+                file_date = datetime.strptime(date_str, '%Y%m%d')
+            except:
+                print(f"  Warning: Could not extract date from {shoreline_file}, using zero correction")
+                tidal_correction_m = 0.0
+            else:
+                # Find the closest date
+                # Make a copy of tidal_df to avoid modifying the original
+                tidal_df_work = tidal_df.copy()
+                tidal_df_work['dates'] = pd.to_datetime(tidal_df_work['dates'], errors='coerce')
+                tidal_df_work = tidal_df_work.dropna(subset=['dates'])
+                
+                # Ensure both dates are timezone-naive for comparison
+                if tidal_df_work['dates'].dt.tz is not None:
+                    tidal_df_work['dates'] = tidal_df_work['dates'].dt.tz_localize(None)
+                
+                # Convert file_date to pandas timestamp (timezone-naive)
+                file_date_ts = pd.Timestamp(file_date)
+                
+                tidal_df_work['date_diff'] = (tidal_df_work['dates'] - file_date_ts).abs()
+                tidal_match = tidal_df_work.loc[tidal_df_work['date_diff'] == tidal_df_work['date_diff'].min()]
+                if len(tidal_match) > 0:
+                    tidal_correction_m = tidal_match['cross_distance'].iloc[0]
+                else:
+                    print(f"  Warning: No tidal correction found for {date_str}, using zero")
+                    tidal_correction_m = 0.0
+            
+            print(f"  Tidal correction: {tidal_correction_m:.3f} m")
+            
+            # Create B-spline curve
+            # Prepare points for spline (ensure closed curve)
+            points = list(zip(x_coords, y_coords))
+            if points[0] != points[-1]:
+                points.append(points[0])  # Close the curve
+            
+            # Create B-spline curve
+            curve = BSpline.Curve()
+            curve.degree = min(3, len(points) - 1)  # Cubic or lower if insufficient points
+            curve.ctrlpts = points
+            
+            # Generate knot vector
+            curve.knotvector = utilities.generate_knot_vector(curve.degree, len(curve.ctrlpts))
+            
+            # Extract 200 evenly spaced points along the curve
+            curve.delta = 1.0 / 199  # For 200 points (0 to 1 inclusive)
+            spline_points = curve.evalpts
+            spline_points = np.array(spline_points)
+            
+            # Calculate normal vectors at each point
+            corrected_points = []
+            
+            for j in range(len(spline_points)):
+                current_point = spline_points[j]
+                
+                # Calculate tangent vector using neighboring points
+                if j == 0:
+                    # First point: use forward difference
+                    tangent = spline_points[j+1] - current_point
+                elif j == len(spline_points) - 1:
+                    # Last point: use backward difference
+                    tangent = current_point - spline_points[j-1]
+                else:
+                    # Middle points: use central difference
+                    tangent = spline_points[j+1] - spline_points[j-1]
+                
+                # Calculate normal vector (rotate tangent 90 degrees)
+                # For outward normal, we need to determine which direction is "out"
+                normal = np.array([-tangent[1], tangent[0]])  # Rotate 90 degrees counterclockwise
+                
+                # Normalize the normal vector
+                normal_length = np.linalg.norm(normal)
+                if normal_length > 0:
+                    normal = normal / normal_length
+                
+                # Apply tidal correction by moving point along normal vector
+                corrected_point = current_point + normal * tidal_correction_m
+                corrected_points.append(corrected_point)
+            
+            # Save corrected shoreline
+            corrected_points = np.array(corrected_points)
+            corrected_df = pd.DataFrame({
+                'xm': corrected_points[:, 0],
+                'ym': corrected_points[:, 1]
+            })
+            
+            # Generate output filename
+            output_filename = shoreline_file.replace('.csv', '_tidal_corrected.csv')
+            output_path = os.path.join(output_dir, output_filename)
+            
+            corrected_df.to_csv(output_path, index=False)
+            corrected_files.append(output_path)
+            
+            print(f"  Saved corrected shoreline: {output_filename}")
+            
+        except Exception as e:
+            print(f"  Error processing {shoreline_file}: {e}")
+            continue
+    
+    print(f"\nSuccessfully processed {len(corrected_files)} out of {len(filtered_shoreline_files)} shorelines")
+    return corrected_files
 
 ######################################################################################################
 # Previous Tidal correction functions

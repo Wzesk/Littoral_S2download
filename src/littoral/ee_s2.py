@@ -411,24 +411,24 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     print(f"landsat count = {l9_col.size().getInfo()}")
 
     # if subfolders do not exist, create them
-    if not os.path.exists(path + "/reference"):
-        os.makedirs(path + "/reference")
+    if not os.path.exists(path + "/REFERENCE"):
+        os.makedirs(path + "/REFERENCE")
     # if target folder does not exist, create it
-    if not os.path.exists(path + "/targets"):
-        os.makedirs(path + "/targets")
+    if not os.path.exists(path + "/TARGETS"):
+        os.makedirs(path + "/TARGETS")
     # if rawrgb folder does not exist, create it
-    if not os.path.exists(path + "/rawrgb"):
-        os.makedirs(path + "/rawrgb")
+    if not os.path.exists(path + "/RAWRGB"):
+        os.makedirs(path + "/RAWRGB")
     # if rawnir folder does not exist, create it
-    if not os.path.exists(path + "/rawnir"):
-        os.makedirs(path + "/rawnir")
+    if not os.path.exists(path + "/RAWNIR"):
+        os.makedirs(path + "/RAWNIR")
 
-    retrieve_tiff_from_collection(data, l9_col, 0, path + "/reference")
+    retrieve_tiff_from_collection(data, l9_col, 0, path + "/REFERENCE")
     
     for i in range(length):
         #check if image is all zeros
         img = ee.Image(se2_col.toList(se2_col.size()).get(i))
-        stats = img.reduceRegion(reducer=ee.Reducer.anyNonZero(), geometry=ee.Geometry.BBox(*data['aoi']), scale=10)
+        stats = img.reduceRegion(reducer=ee.Reducer.anyNonZero(), geometry=ee.Geometry.Rectangle(data['aoi']), scale=10)
         has_data = stats.get('B4')
         if has_data == 0:
             print(f"Image {i} is all zeros.")
@@ -437,7 +437,7 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
         #get two arrays from each s2 image, one for rgb and one for nir
         rgb,nir = retrieve_rgb_nir_from_collection(data, se2_col, i)
         #get a tiff with all bands to calculate coregistration offsets
-        retrieve_tiff_from_collection(data, se2_col,i, path + "/targets")
+        retrieve_tiff_from_collection(data, se2_col,i, path + "/TARGETS")
 
         #get the name of the i image file from the collection
         img_name = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('system:index').getInfo()
@@ -454,16 +454,16 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
         nir_img = Image.fromarray((n_nir * 255).astype(np.uint8))
 
         #save images to png
-        rgb_path = path + "/rawrgb/" + img_name + "_rgb.png"
+        rgb_path = path + "/RAWRGB/" + img_name + "_rgb.png"
         rgb_img.save(rgb_path)
-        nir_path = path + "/rawnir/" + img_name + "_nir.png"
+        nir_path = path + "/RAWNIR/" + img_name + "_nir.png"
         nir_img.save(nir_path)
 
         # get cloud cover percentages for collection images
         cloudy_pixel_percentage = ee.Image(se2_col.toList(se2_col.size()).get(i)).get('CLOUDY_PIXEL_PERCENTAGE').getInfo()
 
         # add row to table
-        new_row = pd.DataFrame({'Index': [i], 'name': [img_name], 'rgb path': [rgb_path], 'nir path': [nir_path], 'reference_path': [path + "/reference"], 'target_path': [path + "/targets"], 'cloudy_pixel_percentage': [cloudy_pixel_percentage]})
+        new_row = pd.DataFrame({'Index': [i], 'name': [img_name], 'rgb path': [rgb_path], 'nir path': [nir_path], 'reference_path': [path + "/REFERENCE"], 'target_path': [path + "/TARGETS"], 'cloudy_pixel_percentage': [cloudy_pixel_percentage]})
         proj_track = pd.concat([proj_track, new_row], ignore_index=True)
         
         
@@ -723,3 +723,112 @@ def get_landsat_coreg(data):
     landsat_sorted = landsat_col.sort('CLOUD_COVER')
 
     return landsat_sorted
+
+
+def process_cloud_imputed_images(existing_nir_folder, existing_rgb_folder, clear_tiff_folder, clear_output_folder):
+    """
+    Process NIR and RGB images by replacing them with cloud-imputed versions from TIFF files.
+    
+    Parameters:
+    -----------
+    existing_nir_folder : str
+        Path to folder containing original NIR PNG images
+    existing_rgb_folder : str
+        Path to folder containing original RGB PNG images
+    clear_tiff_folder : str
+        Path to folder containing cloudless TIFF files
+    clear_output_folder : str
+        Path to output folder for processed PNG images
+        
+    Returns:
+    --------
+    list : List of successfully processed output file paths
+    """
+    import glob
+    from PIL import Image
+    import rasterio
+    import numpy as np
+    import os
+    
+    # Create the output folder if it doesn't exist
+    os.makedirs(clear_output_folder, exist_ok=True)
+    
+    # Find all NIR and RGB images in the folder
+    nir_images = glob.glob(os.path.join(existing_nir_folder, '*nir.png'))
+    rgb_images = glob.glob(os.path.join(existing_rgb_folder, '*rgb.png'))
+    
+    processed_files = []
+    
+    for img_path, band_type in [(p, 'nir') for p in nir_images] + [(p, 'rgb') for p in rgb_images]:
+        try:
+            # 1. Get the image size
+            with Image.open(img_path) as img:
+                width, height = img.size
+
+            # 2. Find corresponding tiff
+            base_name = os.path.basename(img_path).replace(f'_{band_type}.png', '')
+            tiff_pattern = os.path.join(clear_tiff_folder, f"{base_name}_pred.tif")
+            tiff_files = glob.glob(tiff_pattern)
+            if not tiff_files:
+                print(f"No TIFF found for {img_path}")
+                continue
+            tiff_path = tiff_files[0]
+
+            # 3. Get bands and create 3-band PNG
+            with rasterio.open(tiff_path) as src:
+                if band_type == 'nir':
+                    # Sentinel: NIR is band B08 if available, else band 4 if present
+                    band_names = src.descriptions if hasattr(src, 'descriptions') else None
+                    nir_band = None
+                    if band_names and 'B08' in band_names:
+                        b08_index = band_names.index('B08') + 1  # rasterio bands are 1-based
+                        nir_band = src.read(b08_index)
+                        print(f"Using B08 (band {b08_index}) for NIR: {tiff_path}")
+                    elif src.count >= 6:
+                        nir_band = src.read(6)
+                        print(f"Using band 8 for NIR: {tiff_path}")
+                    else:
+                        print(f"ERROR: No NIR band (B08 or band 4) found in {tiff_path}. Skipping.")
+                        continue
+                    print(f"NIR band stats for {tiff_path}: min={nir_band.min()}, max={nir_band.max()}, mean={nir_band.mean()}")
+                    nir_band = np.nan_to_num(nir_band, nan=0)
+                    nir_band = np.clip(nir_band, 0, 65535)
+                    if np.ptp(nir_band) == 0:
+                        img_arr = np.zeros((nir_band.shape[0], nir_band.shape[1], 3), dtype=np.uint8)
+                    else:
+                        nir_band = ((nir_band - nir_band.min()) / (np.ptp(nir_band) + 1e-6) * 255).astype(np.uint8)
+                        img_arr = np.stack([nir_band]*3, axis=-1)
+                else:
+                    # RGB is bands 3, 2, 1 (Sentinel/Landsat convention)
+                    r = src.read(3) if src.count >= 3 else src.read(1)
+                    g = src.read(2) if src.count >= 2 else src.read(1)
+                    b = src.read(1)
+                    rgb_stack = np.stack([r, g, b], axis=-1)
+                    rgb_stack = np.nan_to_num(rgb_stack, nan=0)
+                    rgb_stack = np.clip(rgb_stack, 0, 65535)
+                    img_arr = np.zeros_like(rgb_stack, dtype=np.uint8)
+                    for i in range(3):
+                        band = rgb_stack[..., i]
+                        if np.ptp(band) == 0:
+                            img_arr[..., i] = np.zeros_like(band, dtype=np.uint8)
+                        else:
+                            img_arr[..., i] = ((band - band.min()) / (np.ptp(band) + 1e-6) * 255).astype(np.uint8)
+
+            # 4. Crop to original size, centered
+            h, w = img_arr.shape[:2]
+            left = max((w - width) // 2, 0)
+            top = max((h - height) // 2, 0)
+            cropped = img_arr[top:top+height, left:left+width]
+
+            # 5. Save as PNG
+            out_path = os.path.join(clear_output_folder, os.path.basename(img_path))
+            Image.fromarray(cropped).save(out_path)
+            print(f"Saved: {out_path}")
+            processed_files.append(out_path)
+            
+        except Exception as e:
+            print(f"Error processing {img_path}: {e}")
+            continue
+    
+    print(f"Successfully processed {len(processed_files)} images")
+    return processed_files
