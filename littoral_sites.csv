@@ -40,12 +40,12 @@ id,site_name,aoi,start,end,max_cloudy_pixel_percentage,last_run,periodic
         ]",2024-01-01,2024-01-30,10,,True
 5,Bodufen,"[
           [
-            72.9211,
+            72.9201,
             5.628
           ],
           [
             72.9259,
-            5.6315
+            5.6325
           ]
         ]",2024-01-01,2024-01-30,10,,True
 6,Goiymaru,"[
