@@ -1,0 +1,55 @@
+folders:
+  clear_output: CLEAR
+  clear_tiff: /TARGETS/cloudless
+  masked: MASK
+  nir: RAWNIR
+  normalized: NORMALIZED
+  rgb: RAWRGB
+  shoreline: SHORELINE
+  tidal_corrected: TIDAL_CORRECTED
+  tiff: TARGETS
+  upsampled: UP
+mounting:
+  geotools_bucket: coastal_geotools_demo
+  geotools_mount: /home/walter_littor_al/geotools_sites
+  tide_bucket: aviso-fes2022
+  tide_mount: /home/walter_littor_al/tide_model
+pipeline:
+  log_level: INFO
+  max_images: null
+  run_mode: full
+  skip_steps: []
+processing:
+  coregistration:
+    cleanup: true
+  filtering:
+    cluster_eps: 0.05
+    cluster_min_samples: 10
+    defective_point_ratio: 0.1
+    defective_threshold: 50
+    distance_multiplier: 5
+  normalization:
+    max_threshold: 230
+    min_threshold: 25
+  segmentation:
+    model_path: /home/walter_littor_al/littoral_segment/seg_models/yolo8_params
+  tide_correction:
+    beach_slope: 0.08
+    cutoff: 10.0
+    epsg: 4326
+    extrapolate: true
+    method: bilinear
+    model: fes2022b
+    reference_elevation: 0
+    tide_model_dir: /home/walter_littor_al/tide_model
+save_path: /home/walter_littor_al/geotools_sites
+site_name: example_site
+site_table_path: /home/walter_littor_al/Littoral_S2download/littoral_sites.csv
+system_paths:
+  cloud_impute_src: /home/walter_littor_al/littoral_cloud_impute
+  coreg_src: /home/walter_littor_al/littoral_coreg/src
+  littoral_src: /home/walter_littor_al/Littoral_S2download/src
+  proj_data: /opt/conda/envs/littoral_pipeline/share/proj
+  real_esrgan_src: /home/walter_littor_al/Real-ESRGAN
+  refine_src: /home/walter_littor_al
+  segment_src: /home/walter_littor_al/littoral_segment

@@ -170,6 +170,12 @@ def load_site_parameters_cg(name, save_path, load_path):
 
     start = site_row["start"].values[0]
     end = site_row["end"].values[0]
+    
+    # If no end date is specified, use current date for ongoing monitoring
+    if pd.isna(end) or end == '' or end is None:
+        end = datetime.now().strftime('%Y-%m-%d')
+        print(f"No end date specified for site '{name}'. Using current date: {end}")
+    
     try:
         max_cloudy_pixel_percentage = float(site_row["max_cloudy_pixel_percentage"].values[0])
     except:

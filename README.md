@@ -53,6 +53,50 @@ hatch env create
 hatch shell
 ```
 
+## Pipeline Usage
+
+### Prerequisites
+
+Before running the pipeline, you must mount the required cloud storage buckets:
+
+```bash
+# Mount all required buckets
+python mount_utils.py mount all
+
+# Verify mounts are working
+python mount_utils.py status
+```
+
+### Running the Pipeline
+
+```bash
+# List available sites
+python littoral_pipeline.py --list-sites
+
+# Run full pipeline for a site
+python littoral_pipeline.py --site Fenfushi
+
+# Run update pipeline (only new images)
+python littoral_pipeline.py --site Fenfushi --update
+
+# When finished, unmount buckets
+python mount_utils.py unmount all
+```
+
+### Configuration
+
+The pipeline can be customized using YAML configuration files:
+
+```bash
+# Create example configuration
+python littoral_pipeline.py --create-config my_config.yaml
+
+# Run with custom configuration
+python littoral_pipeline.py --config my_config.yaml
+```
+
+**Important**: The pipeline requires cloud storage buckets to be manually mounted before execution. The pipeline will check that required directories are accessible but will not attempt to mount them automatically.
+
 ## Repository Structure
 ```
 littoral_s2download/
@@ -230,6 +274,27 @@ data = {
 collection = get_image_collection(data)
 results = process_collection_images(data, collection)
 ```
+
+### Cloud Storage Access
+
+For manual inspection of data and debugging, use the mount utilities:
+
+```bash
+# Mount cloud storage buckets for manual access
+python mount_utils.py mount all        # Mount both geotools and tide buckets
+python mount_utils.py status           # Check mount status
+python mount_utils.py unmount all      # Clean unmount
+
+# Mount individual buckets
+python mount_utils.py mount geotools   # Site data and results
+python mount_utils.py mount tide       # Tidal model data
+```
+
+The mounted directories contain:
+- **Geotools** (`/home/walter_littor_al/geotools_sites`): Site data and processing results
+- **Tide Models** (`/home/walter_littor_al/tide_model`): FES2022b tidal model data
+
+See [MOUNT_UTILS.md](MOUNT_UTILS.md) for detailed documentation.
 
 ## Key Features
 
