@@ -1,0 +1,74 @@
+test_set:
+  name: "performance_benchmark"
+  description: "Performance benchmark across multiple sites to evaluate processing speed and quality"
+  
+  sites:
+    - "Fenfushi"
+    - "Bodufen"
+    - "anhenunfushi"
+    - "Vakharu"
+  
+  steps:
+    - name: "download"
+      enabled: true
+      max_images: 10
+      timeout: 600
+      
+    - name: "coregister"
+      enabled: true
+      timeout: 1200
+      
+    - name: "cloud_impute"
+      enabled: true
+      timeout: 1800
+      
+    - name: "rgb_nir_creation"
+      enabled: true
+      timeout: 600
+      
+    - name: "upsample"
+      enabled: true
+      timeout: 1200
+      
+    - name: "normalize"
+      enabled: true
+      timeout: 600
+      
+    - name: "segment"
+      enabled: true
+      timeout: 1200
+      
+    - name: "boundary_extract"
+      enabled: true
+      timeout: 600
+      
+    - name: "boundary_refine"
+      enabled: true
+      timeout: 600
+      
+    - name: "geotransform"
+      enabled: true
+      timeout: 600
+      
+    - name: "filter_shorelines"
+      enabled: true
+      timeout: 600
+      
+    - name: "tide_model"
+      enabled: true
+      timeout: 1200
+      
+    - name: "tide_correct"
+      enabled: true
+      timeout: 600
+
+  execution:
+    parallel_sites: false
+    cleanup_after: false  # Keep data for analysis
+    save_intermediate: true
+    
+  output:
+    detailed_logs: true
+    performance_metrics: true
+    quality_metrics: true
+    comparison_baseline: null

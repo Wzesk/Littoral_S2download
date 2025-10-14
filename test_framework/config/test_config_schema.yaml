@@ -1,0 +1,81 @@
+# Test Configuration Schema for Littoral Pipeline Testing
+# This file documents the expected structure for test configuration files
+
+test_set:
+  name: "test_set_name"  # Unique identifier for this test set
+  description: "Description of what this test set evaluates"
+  
+  # Sites to test - can reference sites from littoral_sites.csv
+  sites:
+    - "Fenfushi"
+    - "Bodufen" 
+    - "anhenunfushi"
+    # Add more sites as needed
+  
+  # Pipeline steps to test (in order)
+  steps:
+    - name: "download"
+      enabled: true
+      max_images: 5  # Limit images for testing
+      timeout: 300   # Timeout in seconds
+      
+    - name: "coregister"
+      enabled: true
+      timeout: 600
+      
+    - name: "cloud_impute"
+      enabled: true
+      timeout: 900
+      
+    - name: "rgb_nir_creation"
+      enabled: true
+      timeout: 300
+      
+    - name: "upsample"
+      enabled: true
+      timeout: 600
+      
+    - name: "normalize"
+      enabled: true
+      timeout: 300
+      
+    - name: "segment"
+      enabled: true
+      timeout: 600
+      
+    - name: "boundary_extract"
+      enabled: true
+      timeout: 300
+      
+    - name: "boundary_refine"
+      enabled: true
+      timeout: 300
+      
+    - name: "geotransform"
+      enabled: true
+      timeout: 300
+      
+    - name: "filter_shorelines"
+      enabled: true
+      timeout: 300
+      
+    - name: "tide_model"
+      enabled: true
+      timeout: 600
+      
+    - name: "tide_correct"
+      enabled: true
+      timeout: 300
+
+  # Test execution settings
+  execution:
+    parallel_sites: false    # Whether to run sites in parallel
+    cleanup_after: true      # Whether to clean up test data after completion
+    save_intermediate: true  # Whether to save intermediate files for analysis
+    
+  # Output settings
+  output:
+    detailed_logs: true      # Save detailed logs for each step
+    performance_metrics: true  # Collect performance metrics
+    quality_metrics: true    # Collect quality metrics where applicable
+    comparison_baseline: null  # Optional: compare against baseline results

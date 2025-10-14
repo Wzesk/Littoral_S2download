@@ -1,0 +1,72 @@
+test_set:
+  name: "quick_smoke_test"
+  description: "Quick smoke test to verify all pipeline steps work on a small dataset"
+  
+  sites:
+    - "Fenfushi"
+    - "Bodufen"
+  
+  steps:
+    - name: "download"
+      enabled: true
+      max_images: 2
+      timeout: 300
+      
+    - name: "coregister"
+      enabled: true
+      timeout: 600
+      
+    - name: "cloud_impute"
+      enabled: true
+      timeout: 900
+      
+    - name: "rgb_nir_creation"
+      enabled: true
+      timeout: 300
+      
+    - name: "upsample"
+      enabled: true
+      timeout: 600
+      
+    - name: "normalize"
+      enabled: true
+      timeout: 300
+      
+    - name: "segment"
+      enabled: true
+      timeout: 600
+      
+    - name: "boundary_extract"
+      enabled: true
+      timeout: 300
+      
+    - name: "boundary_refine"
+      enabled: true
+      timeout: 300
+      
+    - name: "geotransform"
+      enabled: true
+      timeout: 300
+      
+    - name: "filter_shorelines"
+      enabled: true
+      timeout: 300
+      
+    - name: "tide_model"
+      enabled: true
+      timeout: 600
+      
+    - name: "tide_correct"
+      enabled: true
+      timeout: 300
+
+  execution:
+    parallel_sites: false
+    cleanup_after: true
+    save_intermediate: true
+    
+  output:
+    detailed_logs: true
+    performance_metrics: true
+    quality_metrics: true
+    comparison_baseline: null

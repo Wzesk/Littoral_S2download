@@ -877,9 +877,9 @@ def detect_islands_from_embeddings(aoi, year=2024, n_samples=1000, n_clusters=2,
     works well for small island detection in oceanic environments.
     """
     # Convert AOI to Earth Engine geometry
-      # expand the aoi by 2600m to get more pixels to co-register
+      # expand the aoi by 1000m to get more pixels to co-register
     aoi_rec = ee.Geometry.Rectangle(aoi)
-    geometry = aoi_rec.buffer(2600)
+    geometry = aoi_rec.buffer(1000)
 
     # Access the Satellite Embedding Dataset
     embeddings = ee.ImageCollection('GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL')
@@ -944,12 +944,12 @@ def detect_islands_from_embeddings(aoi, year=2024, n_samples=1000, n_clusters=2,
     island_list = island_vectors.toList(island_vectors.size())
     if island_vectors.size().getInfo() > 1:
         print(f"Found {island_vectors.size().getInfo()} disconnected islands, keeping the closest to AOI centroid")
-        aoi_centroid = geometry.centroid().coordinates().getInfo()
+        aoi_centroid = geometry.centroid(maxError=1).coordinates().getInfo()
         min_dist = float('inf')
         closest_island = None
         for i in range(island_vectors.size().getInfo()):
             island = ee.Feature(island_list.get(i))
-            island_centroid = island.geometry().centroid().coordinates().getInfo()
+            island_centroid = island.geometry().centroid(maxError=1).coordinates().getInfo()
             dist = ((island_centroid[0] - aoi_centroid[0])**2 + (island_centroid[1] - aoi_centroid[1])**2)**0.5
             if dist < min_dist:
                 min_dist = dist
@@ -974,10 +974,10 @@ def detect_islands_from_embeddings(aoi, year=2024, n_samples=1000, n_clusters=2,
     if not os.path.exists(AE_folder):
         os.makedirs(AE_folder)  
 
-    #save the mask as a png
+    #save the mask as a png. 
     island_mask_vis = island_mask.visualize(min=0, max=1, palette=['blue', 'green'])
     url = island_mask_vis.getDownloadUrl({
-        'region': geometry,
+        'region': geometry,#aoi_rec, #geometry is the buffered AOI aoi_rec is the original.
         'scale': 10,
         'format': 'png'
     })

@@ -22,7 +22,7 @@ try:
 except ImportError:
     DBSCAN = None
 
-from pipeline_functions import PipelineStep
+from .pipeline_functions import PipelineStep
 
 logger = logging.getLogger(__name__)
 

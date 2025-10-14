@@ -42,11 +42,11 @@ import logging
 from typing import Optional, List
 import traceback
 
-# Add current directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add pipeline modules to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from pipeline_config import PipelineConfig, create_example_config
-from pipeline_orchestrator import PipelineOrchestrator
+from pipeline.pipeline_config import PipelineConfig, create_example_config
+from pipeline.pipeline_orchestrator import PipelineOrchestrator
 
 
 def setup_basic_logging(log_level: str = "INFO"):

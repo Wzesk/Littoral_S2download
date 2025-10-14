@@ -17,9 +17,9 @@ from unittest.mock import patch, MagicMock
 # Add parent directory to path to import pipeline modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pipeline_config import PipelineConfig
-from pipeline_functions import MountManager
-import mount_utils
+from pipeline.pipeline_config import PipelineConfig
+from pipeline.pipeline_functions import MountManager
+import pipeline.mount_utils as mount_utils
 
 
 class TestMountManager(unittest.TestCase):

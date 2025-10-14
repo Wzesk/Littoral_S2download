@@ -13,16 +13,16 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 import pandas as pd
 
-from pipeline_config import PipelineConfig
-from pipeline_functions import (
+from .pipeline_config import PipelineConfig
+from .pipeline_functions import (
     ImageDownloader, Coregistration, CloudImputation, 
     RGBNIRCreation, Upsampling, Normalization, Segmentation
 )
-from pipeline_advanced import (
+from .pipeline_advanced import (
     BoundaryExtraction, BoundaryRefinement, Geotransformation,
     ShorelineFiltering, TidalModeling, TidalCorrection
 )
-from mount_verification import verify_required_mounts, verify_tide_mount
+from .mount_verification import verify_required_mounts, verify_tide_mount
 
 
 class UpdateModeManager:

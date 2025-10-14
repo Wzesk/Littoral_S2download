@@ -18,7 +18,7 @@ def test_config_creation():
     """Test configuration file creation."""
     print("Testing configuration creation...")
     
-    from pipeline_config import PipelineConfig, create_example_config
+    from pipeline.pipeline_config import PipelineConfig, create_example_config
     
     # Test default config creation
     config = PipelineConfig()
@@ -48,7 +48,7 @@ def test_config_validation():
     """Test configuration validation."""
     print("Testing configuration validation...")
     
-    from pipeline_config import PipelineConfig
+    from pipeline.pipeline_config import PipelineConfig
     
     # Test with invalid site name
     config = PipelineConfig()
@@ -66,10 +66,10 @@ def test_import_structure():
     print("Testing module imports...")
     
     try:
-        from pipeline_config import PipelineConfig
-        from pipeline_functions import MountManager, ImageDownloader
-        from pipeline_advanced import ShorelineFiltering, TidalCorrection
-        from pipeline_orchestrator import PipelineOrchestrator, UpdateModeManager
+        from pipeline.pipeline_config import PipelineConfig
+        from pipeline.pipeline_functions import MountManager, ImageDownloader
+        from pipeline.pipeline_advanced import ShorelineFiltering, TidalCorrection
+        from pipeline.pipeline_orchestrator import PipelineOrchestrator, UpdateModeManager
         print("✅ All modules imported successfully")
     except ImportError as e:
         print(f"❌ Import error: {e}")
