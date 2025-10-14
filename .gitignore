@@ -1,3 +1,6 @@
 .DS_Store
 __pycache__/
 *.pyc
+weights/RealESRGAN_x4.pth
+weights/models--sberbank-ai--Real-ESRGAN/snapshots/8110204ebf8d25c031b66c26c2d1098aa831157e/RealESRGAN_x4.pth
+weights/models--sberbank-ai--Real-ESRGAN/refs/main

@@ -389,6 +389,9 @@ def process_collection_images_tofiles(data, se2_col, max_images=-1):
     Saves processed images to files.
     """
     
+    #first get the ae mask
+    ae_path,cluster_data = detect_islands_from_embeddings(data["aoi"], year=2024, n_samples=1000, n_clusters=2, folder_path=data["path"])
+
     name = data["project_name"]
     path = data["path"]
     threshold = 1
@@ -561,7 +564,7 @@ def get_cloud_cover_percentages_fom_collection(data, se2_col):
         # add row to table
         cloud_cover = pd.concat([cloud_cover, new_row], ignore_index=True)
 
-    return proj_track
+    return cloud_cover
 
 def process_collection_images_totar(data: Dict, se2_col: ee.ImageCollection,site_path='') -> pd.DataFrame:
     """Batch process multiple images from collection.
@@ -832,3 +835,257 @@ def process_cloud_imputed_images(existing_nir_folder, existing_rgb_folder, clear
     
     print(f"Successfully processed {len(processed_files)} images")
     return processed_files
+
+##### using Alpha Earth embeddings to detect islands #####
+
+def detect_islands_from_embeddings(aoi, year=2024, n_samples=1000, n_clusters=2, folder_path=""):
+    """
+    Detect islands using Google Earth Engine satellite embeddings.
+    
+    This function replicates the functionality from the alpha_earth notebook
+    to identify islands within an AOI using unsupervised clustering on 
+    satellite embedding features.
+    
+    Parameters
+    ----------
+    aoi : list
+        Area of interest coordinates [x1, y1, x2, y2] in WGS84
+    year : int, optional
+        Year for embedding data, by default 2024
+    n_samples : int, optional
+        Number of samples for training the clusterer, by default 1000
+    n_clusters : int, optional
+        Number of clusters for k-means, by default 2
+        
+    Returns
+    -------
+    tuple
+        - ee.Image : Binary mask where 1 = island pixels, 0 = water pixels
+        - ee.Image : Full clustering result with cluster IDs
+        - dict : Cluster information including pixel counts
+        
+    Examples
+    --------
+    >>> aoi = [72.9201, 5.628, 72.9259, 5.6325]  # Maldives coordinates
+    >>> island_mask, clusters, info = detect_islands_from_embeddings(aoi)
+    >>> # Use island_mask for further analysis or visualization
+    
+    Notes
+    -----
+    This function assumes the cluster with fewer pixels represents islands,
+    while the cluster with more pixels represents water. This heuristic
+    works well for small island detection in oceanic environments.
+    """
+    # Convert AOI to Earth Engine geometry
+      # expand the aoi by 2600m to get more pixels to co-register
+    aoi_rec = ee.Geometry.Rectangle(aoi)
+    geometry = aoi_rec.buffer(2600)
+
+    # Access the Satellite Embedding Dataset
+    embeddings = ee.ImageCollection('GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL')
+    
+    # Filter embeddings by date and bounds
+    start_date = ee.Date.fromYMD(year, 1, 1)
+    end_date = start_date.advance(1, 'year')
+    
+    filtered_embeddings = embeddings.filter(
+        ee.Filter.date(start_date, end_date)
+    ).filter(
+        ee.Filter.bounds(geometry)
+    )
+    
+    # Create mosaic of embeddings
+    embeddings_image = filtered_embeddings.mosaic()
+    
+    # Create training dataset for unsupervised clustering
+    training = embeddings_image.sample(
+        region=geometry,
+        scale=10,
+        numPixels=n_samples,
+        seed=100
+    )
+    
+    # Train k-means clusterer
+    clusterer = ee.Clusterer.wekaKMeans(n_clusters).train(training)
+    
+    # Apply clustering to the image
+    clustered = embeddings_image.cluster(clusterer)
+    
+    # Calculate pixel counts for each cluster to determine which is land vs water
+    cluster_counts = {}
+    cluster_masks = {}
+    
+    for cluster_id in range(n_clusters):
+        # Create mask for this cluster
+        cluster_mask = clustered.eq(cluster_id)
+        cluster_masks[cluster_id] = cluster_mask
+        
+        # Count pixels in this cluster
+        pixel_count = cluster_mask.selfMask().reduceRegion(
+            reducer=ee.Reducer.count(),
+            geometry=geometry,
+            scale=10,
+            maxPixels=1e9
+        )
+        
+        cluster_counts[cluster_id] = pixel_count
+    
+    # For a 2-cluster scenario, use a simple heuristic:
+    # Assume cluster 1 represents islands (smaller areas) and cluster 0 represents water
+    # This is a reasonable assumption for oceanic environments with small islands
+    island_cluster_id = 1
+    water_cluster_id = 0
+    
+    # Create binary island mask
+    island_mask = clustered.eq(island_cluster_id)
+
+    # check for disconnected islands and only keep the one whose centroid is closest to the AOI centroid
+    island_vectors = extract_island_vectors(island_mask, geometry)
+    island_list = island_vectors.toList(island_vectors.size())
+    if island_vectors.size().getInfo() > 1:
+        print(f"Found {island_vectors.size().getInfo()} disconnected islands, keeping the closest to AOI centroid")
+        aoi_centroid = geometry.centroid().coordinates().getInfo()
+        min_dist = float('inf')
+        closest_island = None
+        for i in range(island_vectors.size().getInfo()):
+            island = ee.Feature(island_list.get(i))
+            island_centroid = island.geometry().centroid().coordinates().getInfo()
+            dist = ((island_centroid[0] - aoi_centroid[0])**2 + (island_centroid[1] - aoi_centroid[1])**2)**0.5
+            if dist < min_dist:
+                min_dist = dist
+                closest_island = island
+        # Create a mask from the closest island
+        island_mask = ee.Image(0).toByte().paint(closest_island.geometry(), 1)
+        print("Kept the closest island to AOI centroid")
+    else:
+        print("Only one island detected, no need to filter")
+    
+    # Create cluster information dictionary
+    cluster_info = {
+        'cluster_counts': cluster_counts,
+        'island_cluster_id': island_cluster_id,
+        'water_cluster_id': water_cluster_id,
+        'geometry': geometry,
+        'scale': 10
+    }
+
+    #create a AE folder from the folder path
+    AE_folder = os.path.join(folder_path, "AE")
+    if not os.path.exists(AE_folder):
+        os.makedirs(AE_folder)  
+
+    #save the mask as a png
+    island_mask_vis = island_mask.visualize(min=0, max=1, palette=['blue', 'green'])
+    url = island_mask_vis.getDownloadUrl({
+        'region': geometry,
+        'scale': 10,
+        'format': 'png'
+    })
+    response = requests.get(url)
+    island_mask_image = Image.open(io.BytesIO(response.content))
+    island_mask_path = os.path.join(AE_folder, "island_mask.png")
+    island_mask_image.save(island_mask_path)
+    print(f"Island mask saved to {island_mask_path}")
+    
+    return island_mask_path, cluster_info
+
+
+def extract_island_vectors(island_mask, geometry, min_area=100, scale=10):
+    """
+    Convert island mask to vector polygons with area filtering.
+    
+    Parameters
+    ----------
+    island_mask : ee.Image
+        Binary mask where 1 = island pixels
+    geometry : ee.Geometry
+        Area of interest geometry
+    min_area : float, optional
+        Minimum island area in square meters, by default 100
+    scale : int, optional
+        Processing scale in meters, by default 10
+        
+    Returns
+    -------
+    ee.FeatureCollection
+        Collection of island polygons with area attributes
+    """
+    # Convert mask to vectors
+    island_vectors = island_mask.selfMask().reduceToVectors(
+        geometry=geometry,
+        scale=scale,
+        geometryType='polygon',
+        eightConnected=False,
+        maxPixels=1e9
+    )
+    
+    # Add area calculation to each feature
+    def add_area(feature):
+        area = feature.geometry().area(maxError=1)
+        perimeter = feature.geometry().perimeter(maxError=1)
+        # Calculate compactness (4π*area/perimeter²)
+        compactness = area.multiply(4).multiply(3.14159).divide(
+            perimeter.multiply(perimeter)
+        )
+        
+        return feature.set({
+            'area_sqm': area,
+            'perimeter_m': perimeter,
+            'compactness': compactness
+        })
+    
+    islands_with_metrics = island_vectors.map(add_area)
+    
+    # Filter by minimum area
+    filtered_islands = islands_with_metrics.filter(
+        ee.Filter.gte('area_sqm', min_area)
+    )
+    
+    return filtered_islands
+
+
+def analyze_island_detection_results(island_mask, island_vectors, geometry):
+    """
+    Generate summary statistics for island detection results.
+    
+    Parameters
+    ----------
+    island_mask : ee.Image
+        Binary island mask
+    island_vectors : ee.FeatureCollection
+        Vector polygons of detected islands
+    geometry : ee.Geometry
+        Study area geometry
+        
+    Returns
+    -------
+    dict
+        Summary statistics including counts, areas, and metrics
+    """
+    # Calculate total island area from mask
+    total_island_pixels = island_mask.selfMask().reduceRegion(
+        reducer=ee.Reducer.count(),
+        geometry=geometry,
+        scale=10,
+        maxPixels=1e9
+    )
+    
+    # Calculate study area
+    study_area = geometry.area(maxError=1)
+    
+    # Summary statistics from vectors
+    island_count = island_vectors.size()
+    total_vector_area = island_vectors.aggregate_sum('area_sqm')
+    avg_island_area = island_vectors.aggregate_mean('area_sqm')
+    avg_compactness = island_vectors.aggregate_mean('compactness')
+    
+    summary = {
+        'study_area_sqm': study_area,
+        'total_island_pixels': total_island_pixels,
+        'island_count': island_count,
+        'total_island_area_sqm': total_vector_area,
+        'average_island_area_sqm': avg_island_area,
+        'average_compactness': avg_compactness
+    }
+    
+    return summary

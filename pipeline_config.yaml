@@ -10,6 +10,8 @@ folders:
   tiff: TARGETS
   upsampled: UP
 mounting:
+  enable_geotools: true
+  enable_tide: true
   geotools_bucket: coastal_geotools_demo
   geotools_mount: /home/walter_littor_al/geotools_sites
   tide_bucket: aviso-fes2022
@@ -23,11 +25,20 @@ processing:
   coregistration:
     cleanup: true
   filtering:
+    boundary_filter_threshold: 50
+    boundary_filter_verbose: true
     cluster_eps: 0.05
     cluster_min_samples: 10
     defective_point_ratio: 0.1
     defective_threshold: 50
     distance_multiplier: 5
+    enable_boundary_filtering: true
+    enable_shape_filter: true
+    enable_shoreline_filtering: true
+    iqr_multiplier: 2.0
+    location_eps: 1.5
+    min_points: 3
+    shape_similarity_threshold: 0.3
   normalization:
     max_threshold: 230
     min_threshold: 25
