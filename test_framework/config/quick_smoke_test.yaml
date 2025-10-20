@@ -59,6 +59,10 @@ test_set:
     - name: "tide_correct"
       enabled: true
       timeout: 300
+      
+    - name: "geojson_convert"
+      enabled: true
+      timeout: 600
 
   execution:
     parallel_sites: false

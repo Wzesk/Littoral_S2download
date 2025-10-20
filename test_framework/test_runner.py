@@ -259,7 +259,7 @@ class TestFramework:
             RGBNIRTester, UpsampleTester, NormalizeTester,
             SegmentTester, BoundaryExtractTester, BoundaryRefineTester,
             GeotransformTester, FilterShorelinesTester, TideModelTester,
-            TideCorrectTester
+            TideCorrectTester, GeoJSONTester
         )
         
         tester_classes = {
@@ -275,7 +275,8 @@ class TestFramework:
             'geotransform': GeotransformTester,
             'filter_shorelines': FilterShorelinesTester,
             'tide_model': TideModelTester,
-            'tide_correct': TideCorrectTester
+            'tide_correct': TideCorrectTester,
+            'geojson_convert': GeoJSONTester
         }
         
         tester_class = tester_classes.get(step_name)

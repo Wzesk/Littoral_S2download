@@ -20,7 +20,7 @@ from .pipeline_functions import (
 )
 from .pipeline_advanced import (
     BoundaryExtraction, BoundaryRefinement, Geotransformation,
-    ShorelineFiltering, TidalModeling, TidalCorrection
+    ShorelineFiltering, TidalModeling, TidalCorrection, GeoJSONConversion
 )
 from .mount_verification import verify_required_mounts, verify_tide_mount
 
@@ -169,7 +169,8 @@ class PipelineOrchestrator:
             'geotransform': Geotransformation(config),
             'filter_shorelines': ShorelineFiltering(config),
             'tide_model': TidalModeling(config),
-            'tide_correct': TidalCorrection(config)
+            'tide_correct': TidalCorrection(config),
+            'geojson_convert': GeoJSONConversion(config)
         }
     
     def setup_logging(self, log_level: str = "INFO"):
@@ -303,6 +304,12 @@ class PipelineOrchestrator:
                 self.logger.info("Step 13: Tidal correction")
                 filtered_files = results.get('filter_shorelines', {}).get('filtered_files', [])
                 results['tide_correct'] = self.steps['tide_correct'].run(filtered_files)
+            
+            # Step 14: GeoJSON conversion and metadata upload
+            if 'geojson_convert' not in self.config['pipeline']['skip_steps']:
+                self.logger.info("Step 14: GeoJSON conversion and metadata upload")
+                corrected_files = results.get('tide_correct', {}).get('corrected_shoreline_paths', [])
+                results['geojson_convert'] = self.steps['geojson_convert'].run(corrected_files)
             
             self.logger.info("=" * 60)
             self.logger.info("FULL PIPELINE COMPLETE")

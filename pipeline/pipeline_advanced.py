@@ -580,3 +580,517 @@ class TidalCorrection(PipelineStep):
         except Exception as e:
             self.logger.error(f"Error in tidal correction: {e}")
             raise
+
+
+class GeoJSONConversion(PipelineStep):
+    """Converts processed shoreline data to GeoJSON format and uploads to cloud storage."""
+    
+    def __init__(self, config):
+        super().__init__(config, 'step_14_geojson_convert')
+        self._setup_cloud_clients()
+    
+    def _setup_cloud_clients(self):
+        """Setup Google Cloud clients for storage and BigQuery."""
+        try:
+            from google.cloud import storage, bigquery
+            import google.auth
+            
+            # Get default credentials
+            credentials, project_id = google.auth.default()
+            
+            self.storage_client = storage.Client(credentials=credentials, project=project_id)
+            self.bq_client = bigquery.Client(credentials=credentials, project=project_id)
+            self.project_id = project_id
+            
+            # Bucket names
+            self.geojson_bucket = 'littoral-geojson'
+            self.public_bucket = 'littoral-public-data'
+            self.staging_bucket = 'littoral-metadata-staging'
+            
+            # BigQuery configuration
+            self.dataset_id = 'shoreline_metadata'
+            self.table_id = 'shoreline_data'
+            
+            self.logger.info(f"Cloud clients initialized for project: {project_id}")
+            
+        except ImportError:
+            self.logger.error("Google Cloud libraries not available. Install with: pip install google-cloud-storage google-cloud-bigquery")
+            raise
+        except Exception as e:
+            self.logger.error(f"Failed to setup cloud clients: {e}")
+            raise
+    
+    def run(self, corrected_files: List[str] = None) -> Dict[str, Any]:
+        """
+        Convert tidal corrected CSV files to GeoJSON and upload to cloud storage.
+        
+        Args:
+            corrected_files: List of tidal corrected CSV file paths
+            
+        Returns:
+            Dictionary with conversion results
+        """
+        try:
+            self.logger.info("Starting GeoJSON conversion and cloud upload")
+            
+            # If no files provided, find tidal corrected files
+            if not corrected_files:
+                tidal_corrected_dir = os.path.join(self.config.get_site_path(), "TIDAL_CORRECTED")
+                if os.path.exists(tidal_corrected_dir):
+                    corrected_files = glob.glob(os.path.join(tidal_corrected_dir, "*_tidal_corrected.csv"))
+                else:
+                    # Fallback to regular shoreline files
+                    shoreline_dir = os.path.join(self.config.get_site_path(), "SHORELINE")
+                    corrected_files = glob.glob(os.path.join(shoreline_dir, "*_geo.csv"))
+            
+            if not corrected_files:
+                self.logger.warning("No files found for GeoJSON conversion")
+                return {
+                    'converted_count': 0,
+                    'metadata_records': 0,
+                    'public_urls': [],
+                    'error': 'No input files found'
+                }
+            
+            self.logger.info(f"Found {len(corrected_files)} files for conversion")
+            
+            converted_count = 0
+            public_urls = []
+            metadata_records = []
+            
+            for csv_file in corrected_files:
+                try:
+                    # Convert CSV to GeoJSON
+                    geojson_data = self._csv_to_geojson(csv_file)
+                    
+                    if geojson_data:
+                        # Generate file names
+                        base_name = os.path.basename(csv_file).replace('_tidal_corrected.csv', '').replace('_geo.csv', '')
+                        geojson_filename = f"{base_name}.geojson"
+                        
+                        # Upload to cloud storage
+                        public_url = self._upload_geojson(geojson_data, geojson_filename)
+                        
+                        if public_url:
+                            # Create metadata record
+                            metadata = self._create_metadata_record(csv_file, geojson_data, public_url)
+                            metadata_records.append(metadata)
+                            
+                            public_urls.append(public_url)
+                            converted_count += 1
+                            
+                            self.logger.info(f"Successfully converted: {base_name}")
+                        
+                except Exception as e:
+                    self.logger.error(f"Failed to convert {csv_file}: {e}")
+                    continue
+            
+            # Upload metadata to BigQuery
+            bigquery_records = 0
+            if metadata_records:
+                bigquery_records = self._upload_to_bigquery(metadata_records)
+            
+            # Update processing status
+            metrics = {
+                'converted_files': converted_count,
+                'total_input_files': len(corrected_files),
+                'bigquery_records': bigquery_records
+            }
+            self.update_status(metrics=metrics)
+            
+            self.logger.info(f"GeoJSON conversion complete: {converted_count}/{len(corrected_files)} files converted")
+            
+            return {
+                'converted_count': converted_count,
+                'metadata_records': bigquery_records,
+                'public_urls': public_urls,
+                'total_input_files': len(corrected_files)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in GeoJSON conversion: {e}")
+            raise
+    
+    def _csv_to_geojson(self, csv_file: str) -> Dict[str, Any]:
+        """Convert CSV coordinates to GeoJSON format."""
+        try:
+            import pandas as pd
+            import json
+            
+            # Read CSV file
+            df = pd.read_csv(csv_file)
+            
+            # Assume columns are xm, ym (UTM coordinates)
+            if 'xm' not in df.columns or 'ym' not in df.columns:
+                self.logger.error(f"CSV file {csv_file} missing required columns (xm, ym)")
+                return None
+            
+            # Convert UTM to WGS84 for web compatibility
+            coordinates = self._convert_coordinates_to_wgs84(df['xm'].values, df['ym'].values)
+            
+            if len(coordinates) < 2:
+                self.logger.warning(f"Insufficient coordinates in {csv_file}")
+                return None
+            
+            # Create GeoJSON LineString
+            geojson = {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {
+                        "site_name": self.config['site_name'],
+                        "source_file": os.path.basename(csv_file),
+                        "processing_date": datetime.now().isoformat(),
+                        "data_source": "littoral_pipeline",
+                        "coordinate_system": "WGS84",
+                        "total_points": len(coordinates)
+                    },
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": coordinates
+                    }
+                }]
+            }
+            
+            return geojson
+            
+        except Exception as e:
+            self.logger.error(f"Error converting CSV to GeoJSON: {e}")
+            return None
+    
+    def _convert_coordinates_to_wgs84(self, x_coords, y_coords):
+        """Convert UTM coordinates to WGS84 (longitude, latitude)."""
+        try:
+            import pyproj
+            
+            # Assume UTM Zone 43N based on the file names (T43NBF, T43NBG)
+            utm_proj = pyproj.Proj(proj='utm', zone=43, ellps='WGS84', datum='WGS84')
+            wgs84_proj = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
+            
+            # Convert coordinates
+            transformer = pyproj.Transformer.from_proj(utm_proj, wgs84_proj, always_xy=True)
+            lon_coords, lat_coords = transformer.transform(x_coords, y_coords)
+            
+            # Return as [longitude, latitude] pairs for GeoJSON
+            coordinates = [[float(lon), float(lat)] for lon, lat in zip(lon_coords, lat_coords)]
+            
+            return coordinates
+            
+        except ImportError:
+            self.logger.error("pyproj not available. Install with: pip install pyproj")
+            # Fallback: assume coordinates are already in a reasonable system
+            return [[float(x), float(y)] for x, y in zip(x_coords, y_coords)]
+        except Exception as e:
+            self.logger.error(f"Error converting coordinates: {e}")
+            # Fallback: return original coordinates
+            return [[float(x), float(y)] for x, y in zip(x_coords, y_coords)]
+    
+    def _upload_geojson(self, geojson_data: Dict[str, Any], filename: str) -> str:
+        """Upload GeoJSON to cloud storage and return public URL."""
+        try:
+            import json
+            
+            # Convert to JSON string
+            geojson_str = json.dumps(geojson_data, indent=2)
+            
+            # Upload to public bucket
+            bucket = self.storage_client.bucket(self.public_bucket)
+            blob_path = f"shorelines/{filename}"
+            blob = bucket.blob(blob_path)
+            
+            # Upload with correct content type
+            blob.upload_from_string(
+                geojson_str, 
+                content_type='application/geo+json'
+            )
+            
+            # Make blob publicly readable
+            blob.make_public()
+            
+            # Return public URL
+            public_url = f"https://storage.googleapis.com/{self.public_bucket}/{blob_path}"
+            
+            self.logger.info(f"Uploaded GeoJSON to: {public_url}")
+            return public_url
+            
+        except Exception as e:
+            self.logger.error(f"Error uploading GeoJSON: {e}")
+            return None
+    
+    def _create_metadata_record(self, csv_file: str, geojson_data: Dict[str, Any], public_url: str) -> Dict[str, Any]:
+        """Create metadata record for BigQuery."""
+        try:
+            import json
+            # Extract information from filename and data
+            filename = os.path.basename(csv_file)
+            
+            # Parse date from filename (e.g., 20240116T052149)
+            import re
+            date_match = re.search(r'(\d{8})', filename)
+            image_date = None
+            if date_match:
+                date_str = date_match.group(1)
+                image_date = datetime.strptime(date_str, '%Y%m%d').strftime('%Y-%m-%d')
+            
+            # Calculate metrics from GeoJSON
+            feature = geojson_data['features'][0]
+            coordinates = feature['geometry']['coordinates']
+            
+            # Calculate total length (approximate)
+            total_length_m = self._calculate_line_length(coordinates)
+            
+            # Create bounding box
+            lons = [coord[0] for coord in coordinates]
+            lats = [coord[1] for coord in coordinates]
+            bbox = {
+                "type": "Polygon",
+                "coordinates": [[
+                    [min(lons), min(lats)],
+                    [max(lons), min(lats)],
+                    [max(lons), max(lats)],
+                    [min(lons), max(lats)],
+                    [min(lons), min(lats)]
+                ]]
+            }
+            
+            # Create metadata record matching BigQuery schema
+            record = {
+                'site_id': self.config['site_name'],
+                'timestamp': image_date + 'T12:00:00Z' if image_date else datetime.now().isoformat(),
+                'date_processed': datetime.now().isoformat(),
+                'geojson_path': public_url,
+                'simplified_geometry': None,  # Would need to create simplified GEOGRAPHY
+                'shoreline_length_m': total_length_m,
+                'area_enclosed_m2': None,  # Would need to calculate
+                'tide_height_m': None,  # Would need tide model data
+                'tide_corrected': True,  # Since we're processing tidal corrected files
+                'cloud_coverage_percent': None,  # Would need image metadata
+                'quality_score': min(1.0, len(coordinates) / 100.0),
+                'processing_pipeline_version': '1.0',
+                'metadata': json.dumps({
+                    'source_file': filename,
+                    'total_points': len(coordinates),
+                    'coordinate_system': 'WGS84',
+                    'data_source': 'littoral_pipeline'
+                })
+            }
+            
+            return record
+            
+        except Exception as e:
+            self.logger.error(f"Error creating metadata record: {e}")
+            return None
+    
+    def _calculate_line_length(self, coordinates) -> float:
+        """Calculate approximate length of line in meters."""
+        try:
+            from math import radians, sin, cos, sqrt, atan2
+            
+            total_length = 0.0
+            R = 6371000  # Earth radius in meters
+            
+            for i in range(1, len(coordinates)):
+                lon1, lat1 = radians(coordinates[i-1][0]), radians(coordinates[i-1][1])
+                lon2, lat2 = radians(coordinates[i][0]), radians(coordinates[i][1])
+                
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * atan2(sqrt(a), sqrt(1-a))
+                
+                total_length += R * c
+            
+            return total_length
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating line length: {e}")
+            return 0.0
+    
+    def _upload_to_bigquery(self, metadata_records: List[Dict[str, Any]]) -> int:
+        """Upload metadata records to BigQuery."""
+        try:
+            table_ref = self.bq_client.dataset(self.dataset_id).table(self.table_id)
+            table = self.bq_client.get_table(table_ref)
+            
+            # Insert rows
+            errors = self.bq_client.insert_rows_json(table, metadata_records)
+            
+            if errors:
+                self.logger.error(f"BigQuery insert errors: {errors}")
+                return 0
+            else:
+                self.logger.info(f"Successfully inserted {len(metadata_records)} records to BigQuery")
+                return len(metadata_records)
+                
+        except Exception as e:
+            self.logger.error(f"Error uploading to BigQuery: {e}")
+            return 0
+        try:
+            self.logger.info("Starting GeoJSON conversion and metadata upload")
+            
+            # Import required libraries
+            try:
+                import geopandas as gpd
+                from google.cloud import bigquery, storage
+                import shapely.geometry
+                from shapely.geometry import LineString, Point
+            except ImportError as e:
+                raise ImportError(f"Required dependencies not available: {e}")
+            
+            # Get shoreline files to process
+            if corrected_shoreline_paths:
+                shoreline_files = corrected_shoreline_paths
+                self.logger.info(f"Processing {len(shoreline_files)} tidal corrected shorelines")
+            else:
+                # Fallback to TIDAL_CORRECTED folder
+                tidal_corrected_path = self.config.get_folder_path('tidal_corrected')
+                if os.path.exists(tidal_corrected_path):
+                    shoreline_files = glob.glob(os.path.join(tidal_corrected_path, "*.gpkg"))
+                    self.logger.info(f"Found {len(shoreline_files)} files in TIDAL_CORRECTED folder")
+                else:
+                    self.logger.warning("No tidal corrected files found, using filtered shorelines")
+                    filtered_path = self.config.get_folder_path('shorelines')
+                    shoreline_files = glob.glob(os.path.join(filtered_path, "*.gpkg"))
+            
+            if not shoreline_files:
+                self.logger.warning("No shoreline files found for GeoJSON conversion")
+                return {'converted_count': 0, 'uploaded_files': []}
+            
+            # Initialize Google Cloud clients
+            storage_client = storage.Client(project=self.project_id)
+            bq_client = bigquery.Client(project=self.project_id)
+            
+            # Get bucket references
+            geojson_bucket = storage_client.bucket('littoral-geojson')
+            public_bucket = storage_client.bucket('littoral-public-data')
+            
+            converted_files = []
+            metadata_records = []
+            
+            for shoreline_file in shoreline_files:
+                try:
+                    # Load shoreline data
+                    gdf = gpd.read_file(shoreline_file)
+                    if gdf.empty:
+                        self.logger.warning(f"Empty shoreline file: {shoreline_file}")
+                        continue
+                    
+                    # Extract metadata from filename and processing CSV
+                    file_basename = os.path.basename(shoreline_file)
+                    image_name = file_basename.replace('.gpkg', '')
+                    
+                    # Get image metadata from processing CSV
+                    processing_csv = self.config.get_processing_filename()
+                    csv_path = os.path.join(self.config.get_site_path(), processing_csv)
+                    
+                    image_metadata = {}
+                    if os.path.exists(csv_path):
+                        processing_df = pd.read_csv(csv_path)
+                        image_row = processing_df[processing_df['name'].str.contains(image_name[:20])]
+                        if not image_row.empty:
+                            image_metadata = image_row.iloc[0].to_dict()
+                    
+                    # Convert to GeoJSON
+                    geojson_filename = f"{self.config['site_name']}_{image_name}.geojson"
+                    geojson_path = os.path.join('/tmp', geojson_filename)
+                    
+                    # Ensure CRS is WGS84 for web compatibility
+                    if gdf.crs != 'EPSG:4326':
+                        gdf = gdf.to_crs('EPSG:4326')
+                    
+                    # Add metadata attributes to GeoDataFrame
+                    gdf['site_name'] = self.config['site_name']
+                    gdf['image_date'] = image_metadata.get('date', 'unknown')
+                    gdf['processing_date'] = datetime.now().isoformat()
+                    gdf['data_source'] = 'littoral_pipeline'
+                    
+                    # Save as GeoJSON
+                    gdf.to_file(geojson_path, driver='GeoJSON')
+                    
+                    # Upload to storage buckets
+                    # 1. Upload to processing bucket
+                    geojson_blob = geojson_bucket.blob(f"{self.config['site_name']}/{geojson_filename}")
+                    geojson_blob.upload_from_filename(geojson_path)
+                    
+                    # 2. Upload to public bucket
+                    public_blob = public_bucket.blob(f"shorelines/{geojson_filename}")
+                    public_blob.upload_from_filename(geojson_path)
+                    public_blob.make_public()
+                    
+                    # Calculate quality metrics
+                    total_length = gdf.geometry.length.sum()
+                    num_features = len(gdf)
+                    avg_feature_length = total_length / num_features if num_features > 0 else 0
+                    
+                    # Get bounding box
+                    bounds = gdf.total_bounds
+                    bbox_geom = f"POLYGON(({bounds[0]} {bounds[1]}, {bounds[2]} {bounds[1]}, {bounds[2]} {bounds[3]}, {bounds[0]} {bounds[3]}, {bounds[0]} {bounds[1]}))"
+                    
+                    # Prepare BigQuery metadata record
+                    metadata_record = {
+                        'shoreline_id': f"{self.config['site_name']}_{image_name}",
+                        'site_name': self.config['site_name'],
+                        'image_date': image_metadata.get('date', None),
+                        'processing_date': datetime.now().isoformat(),
+                        'geojson_url': f"https://storage.googleapis.com/littoral-public-data/shorelines/{geojson_filename}",
+                        'geometry': bbox_geom,
+                        'total_length_m': float(total_length),
+                        'num_features': int(num_features),
+                        'avg_feature_length_m': float(avg_feature_length),
+                        'data_source': 'littoral_pipeline',
+                        'processing_version': '1.0',
+                        'quality_score': min(1.0, total_length / 10000),  # Simple quality metric
+                        'metadata': json.dumps(image_metadata)
+                    }
+                    
+                    metadata_records.append(metadata_record)
+                    converted_files.append(geojson_filename)
+                    
+                    # Clean up temporary file
+                    os.remove(geojson_path)
+                    
+                    self.logger.info(f"Converted and uploaded: {geojson_filename}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to process {shoreline_file}: {e}")
+                    continue
+            
+            # Upload metadata to BigQuery
+            if metadata_records:
+                table_ref = bq_client.dataset(self.dataset_id).table(self.table_id)
+                
+                # Configure load job to append data
+                job_config = bigquery.LoadJobConfig(
+                    write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+                    schema_update_options=[bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+                )
+                
+                # Load data
+                load_job = bq_client.load_table_from_json(
+                    metadata_records, 
+                    table_ref, 
+                    job_config=job_config
+                )
+                load_job.result()  # Wait for job completion
+                
+                self.logger.info(f"Uploaded {len(metadata_records)} metadata records to BigQuery")
+            
+            # Update processing status
+            self.update_status(metrics={
+                'geojson_converted': len(converted_files),
+                'metadata_uploaded': len(metadata_records)
+            })
+            
+            self.logger.info(f"GeoJSON conversion complete. {len(converted_files)} files converted")
+            
+            return {
+                'converted_count': len(converted_files),
+                'uploaded_files': converted_files,
+                'metadata_records': len(metadata_records),
+                'public_urls': [f"https://storage.googleapis.com/littoral-public-data/shorelines/{f}" for f in converted_files]
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in GeoJSON conversion: {e}")
+            raise

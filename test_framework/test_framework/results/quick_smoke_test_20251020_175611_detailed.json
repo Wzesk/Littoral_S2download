@@ -1,0 +1,654 @@
+{
+  "test_info": {
+    "name": "quick_smoke_test",
+    "description": "Quick smoke test to verify all pipeline steps work on a small dataset",
+    "start_time": "2025-10-20T17:56:04.864631",
+    "end_time": null,
+    "total_duration": null,
+    "sites_tested": [
+      "Fenfushi",
+      "Bodufen"
+    ],
+    "steps_tested": [
+      "download",
+      "coregister",
+      "cloud_impute",
+      "rgb_nir_creation",
+      "upsample",
+      "normalize",
+      "segment",
+      "boundary_extract",
+      "boundary_refine",
+      "geotransform",
+      "filter_shorelines",
+      "tide_model",
+      "tide_correct",
+      "geojson_convert"
+    ]
+  },
+  "site_results": {
+    "Fenfushi": {
+      "site_name": "Fenfushi",
+      "start_time": "2025-10-20T17:56:04.865533",
+      "step_results": {
+        "download": {
+          "start_time": "2025-10-20T17:56:04.867819",
+          "end_time": "2025-10-20T17:56:04.927859",
+          "duration_seconds": 0.06004,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 203.11328125,
+            "final_mb": 203.11328125,
+            "peak_mb": 203.11328125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "coregister": {
+          "start_time": "2025-10-20T17:56:04.928096",
+          "end_time": "2025-10-20T17:56:05.064659",
+          "duration_seconds": 0.136563,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 203.11328125,
+            "final_mb": 217.14453125,
+            "peak_mb": 217.14453125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'arosics'"
+          }
+        },
+        "cloud_impute": {
+          "start_time": "2025-10-20T17:56:05.064864",
+          "end_time": "2025-10-20T17:56:05.127180",
+          "duration_seconds": 0.062316,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 217.14453125,
+            "final_mb": 217.14453125,
+            "peak_mb": 217.14453125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'rasterio'"
+          }
+        },
+        "rgb_nir_creation": {
+          "start_time": "2025-10-20T17:56:05.127364",
+          "end_time": "2025-10-20T17:56:05.205090",
+          "duration_seconds": 0.077726,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 217.14453125,
+            "final_mb": 217.14453125,
+            "peak_mb": 217.14453125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "upsample": {
+          "start_time": "2025-10-20T17:56:05.205302",
+          "end_time": "2025-10-20T17:56:05.291226",
+          "duration_seconds": 0.085924,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 217.14453125,
+            "final_mb": 217.14453125,
+            "peak_mb": 217.14453125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'torch'"
+          }
+        },
+        "normalize": {
+          "start_time": "2025-10-20T17:56:05.291434",
+          "end_time": "2025-10-20T17:56:07.511536",
+          "duration_seconds": 2.220102,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 217.14453125,
+            "final_mb": 223.6484375,
+            "peak_mb": 223.6484375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "files_normalized": 0,
+            "files_skipped": 4,
+            "normalized_directory_size_mb": 0.16788959503173828,
+            "normalization_success_rate": 0.0,
+            "skip_rate": 1.0
+          }
+        },
+        "segment": {
+          "start_time": "2025-10-20T17:56:07.511833",
+          "end_time": "2025-10-20T17:56:07.554992",
+          "duration_seconds": 0.043159,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 223.6484375,
+            "final_mb": 223.6484375,
+            "peak_mb": 223.6484375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'torchvision'"
+          }
+        },
+        "boundary_extract": {
+          "start_time": "2025-10-20T17:56:07.555195",
+          "end_time": "2025-10-20T17:56:07.607616",
+          "duration_seconds": 0.052421,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 223.6484375,
+            "final_mb": 224.26953125,
+            "peak_mb": 224.26953125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'skimage'"
+          }
+        },
+        "boundary_refine": {
+          "start_time": "2025-10-20T17:56:07.607750",
+          "end_time": "2025-10-20T17:56:07.633217",
+          "duration_seconds": 0.025467,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.26953125,
+            "final_mb": 224.52734375,
+            "peak_mb": 224.52734375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'skimage'"
+          }
+        },
+        "geotransform": {
+          "start_time": "2025-10-20T17:56:07.633374",
+          "end_time": "2025-10-20T17:56:07.667222",
+          "duration_seconds": 0.033848,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.52734375,
+            "final_mb": 224.52734375,
+            "peak_mb": 224.52734375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "filter_shorelines": {
+          "start_time": "2025-10-20T17:56:07.667417",
+          "end_time": "2025-10-20T17:56:08.331121",
+          "duration_seconds": 0.663704,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.52734375,
+            "final_mb": 224.78515625,
+            "peak_mb": 224.78515625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "total_shorelines": 4,
+            "filtered_shorelines": 0,
+            "removed_shorelines": 4,
+            "filtering_applied": false,
+            "filter_retention_rate": 0.0
+          }
+        },
+        "tide_model": {
+          "start_time": "2025-10-20T17:56:08.331361",
+          "end_time": "2025-10-20T17:56:08.358899",
+          "duration_seconds": 0.027538,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.78515625,
+            "final_mb": 224.78515625,
+            "peak_mb": 224.78515625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "tide_correct": {
+          "start_time": "2025-10-20T17:56:08.359084",
+          "end_time": "2025-10-20T17:56:08.387172",
+          "duration_seconds": 0.028088,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.78515625,
+            "final_mb": 224.78515625,
+            "peak_mb": 224.78515625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "TidalCorrection.run() missing 1 required positional argument: 'filtered_shoreline_files'"
+          }
+        },
+        "geojson_convert": {
+          "start_time": "2025-10-20T17:56:08.387363",
+          "end_time": "2025-10-20T17:56:08.527994",
+          "duration_seconds": 0.140631,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 224.78515625,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files": 4,
+            "converted_files": 4,
+            "metadata_records": 4,
+            "execution_time_seconds": 0.02,
+            "success_rate": 1.0,
+            "conversion_rate_files_per_second": 221.555,
+            "public_url_accessible": false,
+            "bigquery_upload_success": true,
+            "average_processing_time_per_file": 0.005
+          }
+        }
+      },
+      "overall_success": false,
+      "end_time": "2025-10-20T17:56:08.528103"
+    },
+    "Bodufen": {
+      "site_name": "Bodufen",
+      "start_time": "2025-10-20T17:56:08.528153",
+      "step_results": {
+        "download": {
+          "start_time": "2025-10-20T17:56:08.528238",
+          "end_time": "2025-10-20T17:56:08.574039",
+          "duration_seconds": 0.045801,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "coregister": {
+          "start_time": "2025-10-20T17:56:08.574221",
+          "end_time": "2025-10-20T17:56:08.640510",
+          "duration_seconds": 0.066289,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'arosics'"
+          }
+        },
+        "cloud_impute": {
+          "start_time": "2025-10-20T17:56:08.640701",
+          "end_time": "2025-10-20T17:56:08.686373",
+          "duration_seconds": 0.045672,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'rasterio'"
+          }
+        },
+        "rgb_nir_creation": {
+          "start_time": "2025-10-20T17:56:08.686594",
+          "end_time": "2025-10-20T17:56:08.755208",
+          "duration_seconds": 0.068614,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "upsample": {
+          "start_time": "2025-10-20T17:56:08.755430",
+          "end_time": "2025-10-20T17:56:08.820218",
+          "duration_seconds": 0.064788,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 227.80859375,
+            "peak_mb": 227.80859375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'torch'"
+          }
+        },
+        "normalize": {
+          "start_time": "2025-10-20T17:56:08.820423",
+          "end_time": "2025-10-20T17:56:10.213071",
+          "duration_seconds": 1.392648,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 227.80859375,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "files_normalized": 0,
+            "files_skipped": 2,
+            "normalized_directory_size_mb": 0.0639486312866211,
+            "normalization_success_rate": 0.0,
+            "skip_rate": 1.0
+          }
+        },
+        "segment": {
+          "start_time": "2025-10-20T17:56:10.213333",
+          "end_time": "2025-10-20T17:56:10.261410",
+          "duration_seconds": 0.048077,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'torchvision'"
+          }
+        },
+        "boundary_extract": {
+          "start_time": "2025-10-20T17:56:10.261618",
+          "end_time": "2025-10-20T17:56:10.305535",
+          "duration_seconds": 0.043917,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'skimage'"
+          }
+        },
+        "boundary_refine": {
+          "start_time": "2025-10-20T17:56:10.305728",
+          "end_time": "2025-10-20T17:56:10.336250",
+          "duration_seconds": 0.030522,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'skimage'"
+          }
+        },
+        "geotransform": {
+          "start_time": "2025-10-20T17:56:10.336449",
+          "end_time": "2025-10-20T17:56:10.359633",
+          "duration_seconds": 0.023184,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "filter_shorelines": {
+          "start_time": "2025-10-20T17:56:10.359851",
+          "end_time": "2025-10-20T17:56:10.876133",
+          "duration_seconds": 0.516282,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "total_shorelines": 2,
+            "filtered_shorelines": 0,
+            "removed_shorelines": 2,
+            "filtering_applied": false,
+            "filter_retention_rate": 0.0
+          }
+        },
+        "tide_model": {
+          "start_time": "2025-10-20T17:56:10.876365",
+          "end_time": "2025-10-20T17:56:10.899943",
+          "duration_seconds": 0.023578,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No module named 'ee'"
+          }
+        },
+        "tide_correct": {
+          "start_time": "2025-10-20T17:56:10.900124",
+          "end_time": "2025-10-20T17:56:10.920173",
+          "duration_seconds": 0.020049,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "TidalCorrection.run() missing 1 required positional argument: 'filtered_shoreline_files'"
+          }
+        },
+        "geojson_convert": {
+          "start_time": "2025-10-20T17:56:10.920356",
+          "end_time": "2025-10-20T17:56:11.133270",
+          "duration_seconds": 0.212914,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 229.3203125,
+            "final_mb": 229.3203125,
+            "peak_mb": 229.3203125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files": 2,
+            "converted_files": 2,
+            "metadata_records": 2,
+            "execution_time_seconds": 0.14,
+            "success_rate": 1.0,
+            "conversion_rate_files_per_second": 13.891,
+            "public_url_accessible": false,
+            "bigquery_upload_success": true,
+            "average_processing_time_per_file": 0.072
+          }
+        }
+      },
+      "overall_success": false,
+      "end_time": "2025-10-20T17:56:11.133380"
+    }
+  },
+  "summary_statistics": {
+    "total_sites": 2,
+    "successful_sites": 0,
+    "failed_sites": 2,
+    "step_statistics": {
+      "download": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "coregister": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "cloud_impute": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "rgb_nir_creation": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "upsample": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "normalize": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "segment": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "boundary_extract": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "boundary_refine": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "geotransform": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "filter_shorelines": {
+        "success_rate": 1.0,
+        "total_runs": 2,
+        "successful_runs": 2,
+        "failed_runs": 0,
+        "duration_statistics": {
+          "mean_seconds": 0.589993,
+          "median_seconds": 0.589993,
+          "std_seconds": 0.07371099999999997,
+          "min_seconds": 0.516282,
+          "max_seconds": 0.663704
+        }
+      },
+      "tide_model": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "tide_correct": {
+        "success_rate": 0.0,
+        "total_runs": 2,
+        "successful_runs": 0,
+        "failed_runs": 2,
+        "duration_statistics": {}
+      },
+      "geojson_convert": {
+        "success_rate": 1.0,
+        "total_runs": 2,
+        "successful_runs": 2,
+        "failed_runs": 0,
+        "duration_statistics": {
+          "mean_seconds": 0.1767725,
+          "median_seconds": 0.1767725,
+          "std_seconds": 0.03614149999999999,
+          "min_seconds": 0.140631,
+          "max_seconds": 0.212914
+        }
+      }
+    },
+    "performance_summary": {
+      "total_processing_time": 1.533531,
+      "average_step_time": 0.38338275,
+      "fastest_step_time": 0.140631,
+      "slowest_step_time": 0.663704
+    }
+  }
+}

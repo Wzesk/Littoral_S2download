@@ -1,0 +1,18 @@
+service: littoral-metadata-api
+runtime: custom
+env: flex
+
+automatic_scaling:
+  min_num_instances: 0
+  max_num_instances: 5
+  cool_down_period_sec: 180
+  cpu_utilization:
+    target_utilization: 0.6
+
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
+
+env_variables:
+  GOOGLE_CLOUD_PROJECT: littoral-shoreline-pipeline

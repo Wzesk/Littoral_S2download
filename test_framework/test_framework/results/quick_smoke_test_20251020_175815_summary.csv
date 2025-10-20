@@ -1,0 +1,3 @@
+test_name,site_name,overall_success,start_time,end_time,total_steps,successful_steps,failed_steps
+quick_smoke_test,Fenfushi,False,2025-10-20T17:58:10.987255,2025-10-20T17:58:13.780268,14,2,12
+quick_smoke_test,Bodufen,False,2025-10-20T17:58:13.780345,2025-10-20T17:58:15.900912,14,2,12
