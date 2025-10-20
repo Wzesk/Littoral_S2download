@@ -248,7 +248,12 @@ class TestFramework:
         
     def _create_step_tester(self, step_name: str, step_config: Dict[str, Any]) -> PipelineStepTester:
         """Create appropriate tester for the given step."""
-        # Import step-specific testers
+        # Import step-specific testers with proper path
+        import sys
+        import os
+        test_framework_dir = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, test_framework_dir)
+        
         from tests.step_testers import (
             DownloadTester, CoregisterTester, CloudImputeTester,
             RGBNIRTester, UpsampleTester, NormalizeTester,

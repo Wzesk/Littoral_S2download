@@ -1,0 +1,73 @@
+test_set:
+  name: "3-sites"
+  description: "Test only specific pipeline steps - useful for debugging specific components"
+  
+  sites:
+    - "Fenfushi"
+    - "Bodufen"
+    - "Fuvahmulah"
+  
+  steps:
+    - name: "download"
+      enabled: true
+      max_images: 3
+      timeout: 3000
+      
+    - name: "coregister"
+      enabled: true
+      timeout: 6000
+      
+    - name: "cloud_impute"
+      enabled: false  # Skip cloud imputation
+      timeout: 900
+      
+    - name: "rgb_nir_creation"
+      enabled: false  # Skip RGB/NIR creation
+      timeout: 300
+      
+    - name: "upsample"
+      enabled: true
+      timeout: 600
+      
+    - name: "normalize"
+      enabled: true
+      timeout: 300
+      
+    - name: "segment"
+      enabled: true
+      timeout: 600
+      
+    - name: "boundary_extract"
+      enabled: true
+      timeout: 300
+      
+    - name: "boundary_refine"
+      enabled: true
+      timeout: 300
+      
+    - name: "geotransform"
+      enabled: false  # Skip remaining steps
+      timeout: 300
+      
+    - name: "filter_shorelines"
+      enabled: false
+      timeout: 300
+      
+    - name: "tide_model"
+      enabled: false
+      timeout: 600
+      
+    - name: "tide_correct"
+      enabled: false
+      timeout: 300
+
+  execution:
+    parallel_sites: false
+    cleanup_after: true
+    save_intermediate: true
+    
+  output:
+    detailed_logs: true
+    performance_metrics: true
+    quality_metrics: true
+    comparison_baseline: null

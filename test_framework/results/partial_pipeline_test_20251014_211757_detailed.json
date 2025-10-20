@@ -1,0 +1,518 @@
+{
+  "test_info": {
+    "name": "partial_pipeline_test",
+    "description": "Test only specific pipeline steps - useful for debugging specific components",
+    "start_time": "2025-10-14T21:13:11.829621",
+    "end_time": null,
+    "total_duration": null,
+    "sites_tested": [
+      "Fenfushi",
+      "Bodufen",
+      "Fuvahmulah"
+    ],
+    "steps_tested": [
+      "download",
+      "coregister",
+      "upsample",
+      "normalize",
+      "segment",
+      "boundary_extract",
+      "boundary_refine"
+    ]
+  },
+  "site_results": {
+    "Fenfushi": {
+      "site_name": "Fenfushi",
+      "start_time": "2025-10-14T21:13:11.830625",
+      "step_results": {
+        "download": {
+          "start_time": "2025-10-14T21:13:11.836176",
+          "end_time": "2025-10-14T21:15:14.465654",
+          "duration_seconds": 122.629478,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 266.17578125,
+            "final_mb": 894.10546875,
+            "peak_mb": 894.10546875
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "images_downloaded": 0,
+            "total_entries": 4,
+            "download_success_count": 4,
+            "download_success_rate": 1.0,
+            "max_images_configured": 3,
+            "targets_directory_size_mb": 144.471848487854
+          }
+        },
+        "coregister": {
+          "start_time": "2025-10-14T21:15:14.466133",
+          "end_time": "2025-10-14T21:15:27.774820",
+          "duration_seconds": 13.308687,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 894.10546875,
+            "final_mb": 968.19921875,
+            "peak_mb": 968.19921875
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "files_coregistered": 0,
+            "filtered_files_count": 4,
+            "has_coreg_settings": true,
+            "coregistered_directory_size_mb": 24.820290565490723,
+            "coregistration_success_rate": 0.0
+          }
+        },
+        "upsample": {
+          "start_time": "2025-10-14T21:15:27.775203",
+          "end_time": "2025-10-14T21:15:34.359488",
+          "duration_seconds": 6.584285,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 968.19921875,
+            "final_mb": 1320.1015625,
+            "peak_mb": 1320.1015625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 8,
+            "files_upsampled": 0,
+            "up_directory_size_mb": 0.5601978302001953,
+            "upsampling_success_rate": 0.0
+          }
+        },
+        "normalize": {
+          "start_time": "2025-10-14T21:15:34.359937",
+          "end_time": "2025-10-14T21:15:36.091032",
+          "duration_seconds": 1.731095,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 1320.1015625,
+            "final_mb": 1320.1015625,
+            "peak_mb": 1320.1015625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "files_normalized": 0,
+            "files_skipped": 4,
+            "normalized_directory_size_mb": 0.16788959503173828,
+            "normalization_success_rate": 0.0,
+            "skip_rate": 1.0
+          }
+        },
+        "segment": {
+          "start_time": "2025-10-14T21:15:36.091499",
+          "end_time": "2025-10-14T21:15:41.785555",
+          "duration_seconds": 5.694056,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 1320.1015625,
+            "final_mb": 2094.9765625,
+            "peak_mb": 2094.9765625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "masks_created": 0,
+            "mask_directory_size_mb": 0.007353782653808594,
+            "segmentation_success_rate": 0.0
+          }
+        },
+        "boundary_extract": {
+          "start_time": "2025-10-14T21:15:41.786082",
+          "end_time": "2025-10-14T21:15:46.374331",
+          "duration_seconds": 4.588249,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2094.9765625,
+            "final_mb": 2095.734375,
+            "peak_mb": 2095.734375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "shorelines_extracted": 0,
+            "shoreline_directory_size_mb": 0.053183555603027344,
+            "extraction_success_rate": 0.0
+          }
+        },
+        "boundary_refine": {
+          "start_time": "2025-10-14T21:15:46.374670",
+          "end_time": "2025-10-14T21:15:51.812888",
+          "duration_seconds": 5.438218,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2095.734375,
+            "final_mb": 2099.31640625,
+            "peak_mb": 2099.31640625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 12,
+            "refined_shorelines_created": 0,
+            "total_shoreline_files": 12,
+            "refinement_success_rate": 0.0
+          }
+        }
+      },
+      "overall_success": false,
+      "end_time": "2025-10-14T21:15:51.813094"
+    },
+    "Bodufen": {
+      "site_name": "Bodufen",
+      "start_time": "2025-10-14T21:15:51.813226",
+      "step_results": {
+        "download": {
+          "start_time": "2025-10-14T21:15:51.813408",
+          "end_time": "2025-10-14T21:16:02.429686",
+          "duration_seconds": 10.616278,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2099.31640625,
+            "final_mb": 2099.3984375,
+            "peak_mb": 2099.3984375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "List.get: List index must be between 0 and 0, or -1 and -1. Found 1."
+          }
+        },
+        "coregister": {
+          "start_time": "2025-10-14T21:16:02.430046",
+          "end_time": "2025-10-14T21:16:10.620792",
+          "duration_seconds": 8.190746,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2099.3984375,
+            "final_mb": 2101.16015625,
+            "peak_mb": 2101.16015625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "files_coregistered": 0,
+            "filtered_files_count": 2,
+            "has_coreg_settings": true,
+            "coregistered_directory_size_mb": 11.43652629852295,
+            "coregistration_success_rate": 0.0
+          }
+        },
+        "upsample": {
+          "start_time": "2025-10-14T21:16:10.621170",
+          "end_time": "2025-10-14T21:16:13.836752",
+          "duration_seconds": 3.215582,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2101.16015625,
+            "final_mb": 2101.16015625,
+            "peak_mb": 2101.16015625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 4,
+            "files_upsampled": 0,
+            "up_directory_size_mb": 0.1953420639038086,
+            "upsampling_success_rate": 0.0
+          }
+        },
+        "normalize": {
+          "start_time": "2025-10-14T21:16:13.837109",
+          "end_time": "2025-10-14T21:16:14.898523",
+          "duration_seconds": 1.061414,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2101.16015625,
+            "final_mb": 2101.16015625,
+            "peak_mb": 2101.16015625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "files_normalized": 0,
+            "files_skipped": 2,
+            "normalized_directory_size_mb": 0.0639486312866211,
+            "normalization_success_rate": 0.0,
+            "skip_rate": 1.0
+          }
+        },
+        "segment": {
+          "start_time": "2025-10-14T21:16:14.898854",
+          "end_time": "2025-10-14T21:16:17.717224",
+          "duration_seconds": 2.81837,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2101.16015625,
+            "final_mb": 2167.50390625,
+            "peak_mb": 2167.50390625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "masks_created": 0,
+            "mask_directory_size_mb": 0.001926422119140625,
+            "segmentation_success_rate": 0.0
+          }
+        },
+        "boundary_extract": {
+          "start_time": "2025-10-14T21:16:17.717611",
+          "end_time": "2025-10-14T21:16:20.139260",
+          "duration_seconds": 2.421649,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2167.50390625,
+            "final_mb": 2167.50390625,
+            "peak_mb": 2167.50390625
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 2,
+            "shorelines_extracted": 0,
+            "shoreline_directory_size_mb": 0.024499893188476562,
+            "extraction_success_rate": 0.0
+          }
+        },
+        "boundary_refine": {
+          "start_time": "2025-10-14T21:16:20.139591",
+          "end_time": "2025-10-14T21:16:24.747833",
+          "duration_seconds": 4.608242,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2167.50390625,
+            "final_mb": 2170.52734375,
+            "peak_mb": 2170.52734375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 6,
+            "refined_shorelines_created": 0,
+            "total_shoreline_files": 6,
+            "refinement_success_rate": 0.0
+          }
+        }
+      },
+      "overall_success": false,
+      "end_time": "2025-10-14T21:16:24.748073"
+    },
+    "Fuvahmulah": {
+      "site_name": "Fuvahmulah",
+      "start_time": "2025-10-14T21:16:24.748197",
+      "step_results": {
+        "download": {
+          "start_time": "2025-10-14T21:16:24.748384",
+          "end_time": "2025-10-14T21:17:39.028373",
+          "duration_seconds": 74.279989,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2170.52734375,
+            "final_mb": 2171.234375,
+            "peak_mb": 2171.234375
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "images_downloaded": 3,
+            "total_entries": 3,
+            "download_success_count": 3,
+            "download_success_rate": 1.0,
+            "max_images_configured": 3,
+            "targets_directory_size_mb": 27.10886859893799
+          }
+        },
+        "coregister": {
+          "start_time": "2025-10-14T21:17:39.028700",
+          "end_time": "2025-10-14T21:17:57.055416",
+          "duration_seconds": 18.026716,
+          "success": true,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2171.234375,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "input_files_count": 3,
+            "files_coregistered": 3,
+            "filtered_files_count": 3,
+            "has_coreg_settings": true,
+            "coregistered_directory_size_mb": 49.833558082580566,
+            "coregistration_success_rate": 1.0
+          }
+        },
+        "upsample": {
+          "start_time": "2025-10-14T21:17:57.055777",
+          "end_time": "2025-10-14T21:17:57.089128",
+          "duration_seconds": 0.033351,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2175.20703125,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No input files found for upsampling"
+          }
+        },
+        "normalize": {
+          "start_time": "2025-10-14T21:17:57.089453",
+          "end_time": "2025-10-14T21:17:57.118331",
+          "duration_seconds": 0.028878,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2175.20703125,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No NIR upsampled files found for normalization"
+          }
+        },
+        "segment": {
+          "start_time": "2025-10-14T21:17:57.118583",
+          "end_time": "2025-10-14T21:17:57.143270",
+          "duration_seconds": 0.024687,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2175.20703125,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No normalized files found for segmentation"
+          }
+        },
+        "boundary_extract": {
+          "start_time": "2025-10-14T21:17:57.143606",
+          "end_time": "2025-10-14T21:17:57.170186",
+          "duration_seconds": 0.02658,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2175.20703125,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No mask files found for boundary extraction"
+          }
+        },
+        "boundary_refine": {
+          "start_time": "2025-10-14T21:17:57.170435",
+          "end_time": "2025-10-14T21:17:57.193287",
+          "duration_seconds": 0.022852,
+          "success": false,
+          "error_message": null,
+          "memory_usage_mb": {
+            "initial_mb": 2175.20703125,
+            "final_mb": 2175.20703125,
+            "peak_mb": 2175.20703125
+          },
+          "cpu_usage_percent": {},
+          "custom_metrics": {
+            "error": "No shoreline files found for boundary refinement"
+          }
+        }
+      },
+      "overall_success": false,
+      "end_time": "2025-10-14T21:17:57.193431"
+    }
+  },
+  "summary_statistics": {
+    "total_sites": 3,
+    "successful_sites": 0,
+    "failed_sites": 3,
+    "step_statistics": {
+      "download": {
+        "success_rate": 0.3333333333333333,
+        "total_runs": 3,
+        "successful_runs": 1,
+        "failed_runs": 2,
+        "duration_statistics": {
+          "mean_seconds": 74.279989,
+          "median_seconds": 74.279989,
+          "std_seconds": 0.0,
+          "min_seconds": 74.279989,
+          "max_seconds": 74.279989
+        }
+      },
+      "coregister": {
+        "success_rate": 0.3333333333333333,
+        "total_runs": 3,
+        "successful_runs": 1,
+        "failed_runs": 2,
+        "duration_statistics": {
+          "mean_seconds": 18.026716,
+          "median_seconds": 18.026716,
+          "std_seconds": 0.0,
+          "min_seconds": 18.026716,
+          "max_seconds": 18.026716
+        }
+      },
+      "upsample": {
+        "success_rate": 0.0,
+        "total_runs": 3,
+        "successful_runs": 0,
+        "failed_runs": 3,
+        "duration_statistics": {}
+      },
+      "normalize": {
+        "success_rate": 0.0,
+        "total_runs": 3,
+        "successful_runs": 0,
+        "failed_runs": 3,
+        "duration_statistics": {}
+      },
+      "segment": {
+        "success_rate": 0.0,
+        "total_runs": 3,
+        "successful_runs": 0,
+        "failed_runs": 3,
+        "duration_statistics": {}
+      },
+      "boundary_extract": {
+        "success_rate": 0.0,
+        "total_runs": 3,
+        "successful_runs": 0,
+        "failed_runs": 3,
+        "duration_statistics": {}
+      },
+      "boundary_refine": {
+        "success_rate": 0.0,
+        "total_runs": 3,
+        "successful_runs": 0,
+        "failed_runs": 3,
+        "duration_statistics": {}
+      }
+    },
+    "performance_summary": {
+      "total_processing_time": 92.306705,
+      "average_step_time": 46.1533525,
+      "fastest_step_time": 18.026716,
+      "slowest_step_time": 74.279989
+    }
+  }
+}
