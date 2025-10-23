@@ -53,8 +53,8 @@ processing:
     model: fes2022b
     reference_elevation: 0
     tide_model_dir: /home/walter_littor_al/tide_model
-save_path: /home/walter_littor_al/geotools_sites
-site_name: example_site
+save_path: /home/walter_littor_al/geotools_sites/Fenfushi
+site_name: Fenfushi
 site_table_path: /home/walter_littor_al/Littoral_S2download/littoral_sites.csv
 system_paths:
   cloud_impute_src: /home/walter_littor_al/littoral_cloud_impute

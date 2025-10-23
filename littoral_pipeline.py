@@ -31,6 +31,9 @@ Examples:
     # Skip certain steps
     python littoral_pipeline.py --site Fenfushi --skip-steps download,coregister
 
+    # Run only a specific step
+    python littoral_pipeline.py --site Fenfushi --step geojson_convert
+
     # Set custom log level
     python littoral_pipeline.py --site Fenfushi --log-level DEBUG
 """
@@ -109,6 +112,11 @@ def parse_arguments():
         '--skip-steps',
         type=str,
         help='Comma-separated list of steps to skip (e.g., download,coregister)'
+    )
+    processing_group.add_argument(
+        '--step',
+        type=str,
+        help='Run only a specific pipeline step (e.g., geojson_convert, tide_correct)'
     )
     processing_group.add_argument(
         '--max-images',
@@ -251,6 +259,10 @@ def create_config_from_args(args) -> PipelineConfig:
         skip_list = [step.strip() for step in args.skip_steps.split(',')]
         config['pipeline']['skip_steps'] = skip_list
     
+    if args.step:
+        config['pipeline']['run_mode'] = 'single_step'
+        config['pipeline']['single_step'] = args.step.strip()
+    
     if args.max_images:
         config['pipeline']['max_images'] = args.max_images
     
@@ -288,6 +300,9 @@ def validate_and_display_config(config: PipelineConfig, force: bool = False) -> 
     
     if config['pipeline']['skip_steps']:
         print(f"Skip Steps: {', '.join(config['pipeline']['skip_steps'])}")
+    
+    if config['pipeline'].get('single_step'):
+        print(f"Single Step: {config['pipeline']['single_step']}")
     
     if config['pipeline']['max_images']:
         print(f"Max Images: {config['pipeline']['max_images']}")

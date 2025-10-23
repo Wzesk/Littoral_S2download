@@ -210,14 +210,18 @@ class PipelineOrchestrator:
             self.logger.info(f"Creating site directory: {site_path}")
             os.makedirs(site_path, exist_ok=True)
         
-        # Verify that required cloud storage buckets are mounted
-        self.logger.info("Checking cloud storage mount status...")
-        if not verify_required_mounts(self.logger):
-            self.logger.error("CRITICAL ERROR: Required cloud storage buckets are not mounted")
-            self.logger.error("PIPELINE CANNOT PROCEED - STOPPING EXECUTION")
-            return False
-        
-        self.logger.info("✅ All required cloud storage buckets are mounted")
+        # Verify that required cloud storage buckets are mounted (skip for single-step mode)
+        run_mode = self.config['pipeline']['run_mode']
+        if run_mode != 'single_step':
+            self.logger.info("Checking cloud storage mount status...")
+            if not verify_required_mounts(self.logger):
+                self.logger.error("CRITICAL ERROR: Required cloud storage buckets are not mounted")
+                self.logger.error("PIPELINE CANNOT PROCEED - STOPPING EXECUTION")
+                return False
+            
+            self.logger.info("✅ All required cloud storage buckets are mounted")
+        else:
+            self.logger.info("Single step mode - skipping global mount verification")
         self.logger.info("Prerequisites validation complete")
         return True
     
@@ -398,6 +402,59 @@ class PipelineOrchestrator:
             self.logger.error(f"Update pipeline failed: {e}")
             raise
     
+    def run_single_step(self) -> Dict[str, Any]:
+        """
+        Run a single pipeline step.
+        
+        Returns:
+            Dictionary with step results
+        """
+        try:
+            step_name = self.config['pipeline']['single_step']
+            
+            self.logger.info("=" * 60)
+            self.logger.info(f"RUNNING SINGLE STEP: {step_name}")
+            self.logger.info("=" * 60)
+            
+            # Validate step exists
+            if step_name not in self.steps:
+                available_steps = list(self.steps.keys())
+                raise ValueError(f"Unknown step '{step_name}'. Available steps: {', '.join(available_steps)}")
+            
+            # Special handling for steps that require specific mounts
+            if step_name == 'tide_model':
+                if not verify_tide_mount(self.logger):
+                    raise RuntimeError("Tide model mount verification failed")
+            elif step_name in ['download', 'coregister', 'cloud_impute', 'rgb_nir_creation', 
+                               'upsample', 'normalize', 'segment', 'boundary_extract', 
+                               'boundary_refine', 'geotransform']:
+                # These steps need the geotools mount
+                from .mount_verification import check_mount_status
+                mount_status = check_mount_status()
+                if not mount_status.get('geotools', False):
+                    raise RuntimeError("Geotools bucket mount required for this step")
+            elif step_name in ['geojson_convert']:
+                # geojson_convert only needs geotools mount (if reading from mounted location)
+                # But it can also read from local files, so make it optional
+                self.logger.info(f"Step {step_name} can work with local files - skipping mount verification")
+            
+            # Run the specific step
+            self.logger.info(f"Executing step: {step_name}")
+            step = self.steps[step_name]
+            step_result = step.run()
+            
+            results = {step_name: step_result}
+            
+            self.logger.info("=" * 60)
+            self.logger.info(f"SINGLE STEP COMPLETE: {step_name}")
+            self.logger.info("=" * 60)
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Single step '{step_name}' failed: {e}")
+            raise
+    
     def run(self) -> Dict[str, Any]:
         """
         Run the pipeline based on configured mode.
@@ -417,6 +474,8 @@ class PipelineOrchestrator:
         
         if run_mode == 'update':
             return self.run_update_pipeline()
+        elif run_mode == 'single_step':
+            return self.run_single_step()
         else:
             return self.run_full_pipeline()
     

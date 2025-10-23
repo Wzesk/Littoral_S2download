@@ -633,15 +633,25 @@ class GeoJSONConversion(PipelineStep):
         try:
             self.logger.info("Starting GeoJSON conversion and cloud upload")
             
-            # If no files provided, find tidal corrected files
+            # If no files provided, find both geo-transformed and tidal corrected files
             if not corrected_files:
+                corrected_files = []
+                
+                # Find geo-transformed files from SHORELINE folder
+                shoreline_dir = os.path.join(self.config.get_site_path(), "SHORELINE")
+                if os.path.exists(shoreline_dir):
+                    geo_files = glob.glob(os.path.join(shoreline_dir, "*_geo.csv"))
+                    corrected_files.extend(geo_files)
+                    if geo_files:
+                        self.logger.info(f"Found {len(geo_files)} geo-transformed files in SHORELINE folder")
+                
+                # Find tidally corrected files from TIDAL_CORRECTED folder
                 tidal_corrected_dir = os.path.join(self.config.get_site_path(), "TIDAL_CORRECTED")
                 if os.path.exists(tidal_corrected_dir):
-                    corrected_files = glob.glob(os.path.join(tidal_corrected_dir, "*_tidal_corrected.csv"))
-                else:
-                    # Fallback to regular shoreline files
-                    shoreline_dir = os.path.join(self.config.get_site_path(), "SHORELINE")
-                    corrected_files = glob.glob(os.path.join(shoreline_dir, "*_geo.csv"))
+                    tidal_files = glob.glob(os.path.join(tidal_corrected_dir, "*_tidal_corrected.csv"))
+                    corrected_files.extend(tidal_files)
+                    if tidal_files:
+                        self.logger.info(f"Found {len(tidal_files)} tidally corrected files in TIDAL_CORRECTED folder")
             
             if not corrected_files:
                 self.logger.warning("No files found for GeoJSON conversion")
@@ -660,13 +670,29 @@ class GeoJSONConversion(PipelineStep):
             
             for csv_file in corrected_files:
                 try:
+                    # Determine file type first
+                    filename = os.path.basename(csv_file)
+                    if '_tidal_corrected.csv' in filename:
+                        file_type = "tidally_corrected"
+                    elif '_geo.csv' in filename:
+                        file_type = "geo_transformed"
+                    else:
+                        file_type = "unknown"
+                    
                     # Convert CSV to GeoJSON
-                    geojson_data = self._csv_to_geojson(csv_file)
+                    geojson_data = self._csv_to_geojson(csv_file, file_type)
                     
                     if geojson_data:
-                        # Generate file names
-                        base_name = os.path.basename(csv_file).replace('_tidal_corrected.csv', '').replace('_geo.csv', '')
-                        geojson_filename = f"{base_name}.geojson"
+                        # Generate file names based on file type
+                        if file_type == "tidally_corrected":
+                            base_name = filename.replace('_tidal_corrected.csv', '')
+                            geojson_filename = f"{base_name}_tidally_corrected.geojson"
+                        elif file_type == "geo_transformed":
+                            base_name = filename.replace('_geo.csv', '')
+                            geojson_filename = f"{base_name}_geo.geojson"
+                        else:
+                            base_name = filename.replace('.csv', '')
+                            geojson_filename = f"{base_name}.geojson"
                         
                         # Upload to cloud storage
                         public_url = self._upload_geojson(geojson_data, geojson_filename)
@@ -711,7 +737,7 @@ class GeoJSONConversion(PipelineStep):
             self.logger.error(f"Error in GeoJSON conversion: {e}")
             raise
     
-    def _csv_to_geojson(self, csv_file: str) -> Dict[str, Any]:
+    def _csv_to_geojson(self, csv_file: str, file_type: str = "unknown") -> Dict[str, Any]:
         """Convert CSV coordinates to GeoJSON format."""
         try:
             import pandas as pd
@@ -743,6 +769,11 @@ class GeoJSONConversion(PipelineStep):
                         "processing_date": datetime.now().isoformat(),
                         "data_source": "littoral_pipeline",
                         "coordinate_system": "WGS84",
+                        "source_coordinate_system": "UTM Zone 43N (EPSG:32643)",
+                        "coordinate_transformation": "UTM to WGS84 during GeoJSON export",
+                        "file_type": file_type,
+                        "tide_corrected": file_type == "tidally_corrected",
+                        "tidal_correction_applied_in": "UTM meters" if file_type == "tidally_corrected" else "not_applied",
                         "total_points": len(coordinates)
                     },
                     "geometry": {
@@ -761,14 +792,13 @@ class GeoJSONConversion(PipelineStep):
     def _convert_coordinates_to_wgs84(self, x_coords, y_coords):
         """Convert UTM coordinates to WGS84 (longitude, latitude)."""
         try:
-            import pyproj
+            from pyproj import Transformer
             
-            # Assume UTM Zone 43N based on the file names (T43NBF, T43NBG)
-            utm_proj = pyproj.Proj(proj='utm', zone=43, ellps='WGS84', datum='WGS84')
-            wgs84_proj = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
+            # Use the same transformation as our working solution
+            # UTM Zone 43N (EPSG:32643) to WGS84 (EPSG:4326)
+            transformer = Transformer.from_crs("EPSG:32643", "EPSG:4326", always_xy=True)
             
             # Convert coordinates
-            transformer = pyproj.Transformer.from_proj(utm_proj, wgs84_proj, always_xy=True)
             lon_coords, lat_coords = transformer.transform(x_coords, y_coords)
             
             # Return as [longitude, latitude] pairs for GeoJSON
@@ -853,26 +883,46 @@ class GeoJSONConversion(PipelineStep):
                 ]]
             }
             
+            # Use island name as site_id (standardized)
+            site_id = self.config['site_name']
+            
+            # Parse datetime from filename more accurately
+            import re
+            datetime_match = re.search(r'(\d{8}T\d{6})', filename)
+            if datetime_match:
+                datetime_str = datetime_match.group(1)
+                parsed_datetime = datetime.strptime(datetime_str, '%Y%m%dT%H%M%S')
+                
+                # Determine if this is a tidally corrected file
+                is_tide_corrected = '_tidal_corrected' in filename
+                
+                # Use the original timestamp (no modifications needed)
+                timestamp = parsed_datetime.isoformat() + 'Z'
+            else:
+                timestamp = datetime.now().isoformat() + 'Z'
+                is_tide_corrected = '_tidal_corrected' in filename
+            
             # Create metadata record matching BigQuery schema
             record = {
-                'site_id': self.config['site_name'],
-                'timestamp': image_date + 'T12:00:00Z' if image_date else datetime.now().isoformat(),
-                'date_processed': datetime.now().isoformat(),
+                'site_id': site_id,
+                'timestamp': timestamp,
+                'date_processed': datetime.now().isoformat() + 'Z',
                 'geojson_path': public_url,
-                'simplified_geometry': None,  # Would need to create simplified GEOGRAPHY
+                'simplified_geometry': feature['geometry'],  # Use the full geometry for ST_GEOGFROMGEOJSON
                 'shoreline_length_m': total_length_m,
-                'area_enclosed_m2': None,  # Would need to calculate
-                'tide_height_m': None,  # Would need tide model data
-                'tide_corrected': True,  # Since we're processing tidal corrected files
-                'cloud_coverage_percent': None,  # Would need image metadata
-                'quality_score': min(1.0, len(coordinates) / 100.0),
-                'processing_pipeline_version': '1.0',
-                'metadata': json.dumps({
+                'tide_corrected': is_tide_corrected,
+                'processing_pipeline_version': 'littoral_pipeline_v2_standardized_metadata',
+                'metadata': {
                     'source_file': filename,
                     'total_points': len(coordinates),
-                    'coordinate_system': 'WGS84',
-                    'data_source': 'littoral_pipeline'
-                })
+                    'coordinate_system': 'WGS84 (EPSG:4326)',
+                    'source_coordinate_system': 'UTM Zone 43N (EPSG:32643)',
+                    'coordinate_transformation': 'UTM to WGS84 during GeoJSON export',
+                    'tidal_correction_applied_in': 'UTM meters' if is_tide_corrected else 'not_applied',
+                    'data_source': 'littoral_pipeline',
+                    'site_name': self.config['site_name'],
+                    'image_acquisition_time': datetime_str if datetime_match else 'unknown'
+                }
             }
             
             return record
@@ -908,20 +958,63 @@ class GeoJSONConversion(PipelineStep):
             return 0.0
     
     def _upload_to_bigquery(self, metadata_records: List[Dict[str, Any]]) -> int:
-        """Upload metadata records to BigQuery."""
+        """Upload metadata records to BigQuery, replacing existing records with same site_id and timestamp."""
         try:
-            table_ref = self.bq_client.dataset(self.dataset_id).table(self.table_id)
-            table = self.bq_client.get_table(table_ref)
+            import json
+            table_ref = f"{self.project_id}.{self.dataset_id}.{self.table_id}"
             
-            # Insert rows
-            errors = self.bq_client.insert_rows_json(table, metadata_records)
+            inserted_count = 0
             
-            if errors:
-                self.logger.error(f"BigQuery insert errors: {errors}")
-                return 0
-            else:
-                self.logger.info(f"Successfully inserted {len(metadata_records)} records to BigQuery")
-                return len(metadata_records)
+            for record in metadata_records:
+                try:
+                    # Delete any existing record with same site_id + date + tide_corrected
+                    # This ensures uniqueness based on island + date + tidal correction status
+                    tide_corrected_str = 'TRUE' if record.get('tide_corrected', False) else 'FALSE'
+                    
+                    delete_query = f"""
+                    DELETE FROM `{table_ref}`
+                    WHERE site_id = '{record['site_id']}' 
+                    AND DATE(timestamp) = DATE('{record['timestamp']}')
+                    AND tide_corrected = {tide_corrected_str}
+                    """
+                    
+                    delete_job = self.bq_client.query(delete_query)
+                    delete_job.result()  # Wait for completion
+                    
+                    # Prepare the insert query with proper GEOGRAPHY handling
+                    geojson_str = json.dumps(record['simplified_geometry']).replace("'", "\\'")
+                    metadata_json = json.dumps(record.get('metadata', {})).replace("'", "\\'")
+                    
+                    insert_query = f"""
+                    INSERT INTO `{table_ref}` (
+                        site_id, timestamp, date_processed, geojson_path, 
+                        simplified_geometry, shoreline_length_m, tide_corrected, 
+                        processing_pipeline_version, metadata
+                    ) VALUES (
+                        '{record['site_id']}',
+                        '{record['timestamp']}',
+                        '{record['date_processed']}',
+                        '{record['geojson_path']}',
+                        ST_GEOGFROMGEOJSON('{geojson_str}'),
+                        {record.get('shoreline_length_m', 'NULL')},
+                        {tide_corrected_str},
+                        '{record.get('processing_pipeline_version', 'littoral_pipeline_v2')}',
+                        PARSE_JSON('{metadata_json}')
+                    )
+                    """
+                    
+                    insert_job = self.bq_client.query(insert_query)
+                    insert_job.result()  # Wait for completion
+                    
+                    inserted_count += 1
+                    self.logger.info(f"Successfully uploaded metadata for: {record['site_id']}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to upload record for {record.get('site_id', 'unknown')}: {e}")
+                    continue
+            
+            self.logger.info(f"Successfully uploaded {inserted_count} of {len(metadata_records)} records to BigQuery")
+            return inserted_count
                 
         except Exception as e:
             self.logger.error(f"Error uploading to BigQuery: {e}")
