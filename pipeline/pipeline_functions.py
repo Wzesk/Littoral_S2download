@@ -502,7 +502,8 @@ class Upsampling(PipelineStep):
             self.logger.info("Starting upsampling")
             
             up_input = self.config.get_folder_path('clear_output')
-            upsampled_images = re.upsample_folder(up_input)
+            up_output = self.config.get_folder_path('upsampled')
+            upsampled_images = re.upsample_folder(up_input, output_folder=up_output)
             
             # Update status
             metrics = {'upsampled_images': len(upsampled_images)}
