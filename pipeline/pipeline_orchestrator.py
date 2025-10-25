@@ -306,8 +306,7 @@ class PipelineOrchestrator:
             # Step 13: Tidal correction
             if 'tide_correct' not in self.config['pipeline']['skip_steps']:
                 self.logger.info("Step 13: Tidal correction")
-                filtered_files = results.get('filter_shorelines', {}).get('filtered_files', [])
-                results['tide_correct'] = self.steps['tide_correct'].run(filtered_files)
+                results['tide_correct'] = self.steps['tide_correct'].run()
             
             # Step 14: GeoJSON conversion and metadata upload
             if 'geojson_convert' not in self.config['pipeline']['skip_steps']:
@@ -386,9 +385,8 @@ class PipelineOrchestrator:
                             raise RuntimeError("Cannot proceed with tidal modeling")
                     
                     if step_name == 'tide_correct':
-                        # Pass filtered shorelines from filtering step
-                        filtered_files = results.get('filter_shorelines', {}).get('filtered_files', [])
-                        results[step_name] = self.steps[step_name].run(filtered_files)
+                        # Tidal correction now reads from FILTERED_SHORELINES folder
+                        results[step_name] = self.steps[step_name].run()
                     else:
                         results[step_name] = self.steps[step_name].run()
             
@@ -508,19 +506,19 @@ class PipelineOrchestrator:
             
             step_names = {
                 'step_1_download': '1. Download Imagery',
-                'step_2_filter': '2. Initial Filter',
-                'step_3_coregister': '3. Coregister',
-                'step_4_cloud_impute': '4. Cloud Imputation',
-                'step_5_rgb_nir_creation': '5. RGB/NIR Creation',
-                'step_6_upsample': '6. Upsampling',
-                'step_7_normalize': '7. Normalization',
-                'step_8_segment': '8. Segmentation',
-                'step_9_boundary_extract': '9. Boundary Extraction',
-                'step_10_boundary_refine': '10. Boundary Refinement',
-                'step_11_geotransform': '11. Geotransformation',
-                'step_12_filter_shorelines': '12. Shoreline Filtering',
-                'step_13_tide_model': '13. Tidal Modeling',
-                'step_14_tide_correct': '14. Tidal Correction'
+                'step_3_coregister': '2. Coregister',
+                'step_4_cloud_impute': '3. Cloud Imputation',
+                'step_5_rgb_nir_creation': '4. RGB/NIR Creation',
+                'step_6_upsample': '5. Upsampling',
+                'step_7_normalize': '6. Normalization',
+                'step_8_segment': '7. Segmentation',
+                'step_9_boundary_extract': '8. Boundary Extraction',
+                'step_10_boundary_refine': '9. Boundary Refinement',
+                'step_11_geotransform': '10. Geotransformation',
+                'step_12_filter_shorelines': '11. Shoreline Filtering',
+                'step_13_tide_model': '12. Tidal Modeling',
+                'step_14_tide_correct': '13. Tidal Correction',
+                'step_15_geojson_convert': '14. GeoJSON Convert'
             }
             
             for step_col in step_columns:

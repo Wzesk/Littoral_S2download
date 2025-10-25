@@ -400,6 +400,26 @@ class ShorelineFiltering(PipelineStep):
             else:
                 self.logger.info(f"Skipping defective shoreline filtering (≤{defective_threshold} shorelines)")
             
+            # Create FILTERED_SHORELINES folder and copy filtered files
+            filtered_shorelines_path = self.config.get_folder_path('filtered_shorelines')
+            os.makedirs(filtered_shorelines_path, exist_ok=True)
+            
+            # Clear existing files in filtered folder
+            for existing_file in os.listdir(filtered_shorelines_path):
+                if existing_file.endswith('.csv'):
+                    os.remove(os.path.join(filtered_shorelines_path, existing_file))
+            
+            # Copy filtered shoreline files to the filtered folder
+            import shutil
+            copied_files = []
+            for filtered_file in filtered_geo_files:
+                src_path = os.path.join(shoreline_path, filtered_file)
+                dst_path = os.path.join(filtered_shorelines_path, filtered_file)
+                shutil.copy2(src_path, dst_path)
+                copied_files.append(filtered_file)
+                
+            self.logger.info(f"Copied {len(copied_files)} filtered shorelines to FILTERED_SHORELINES folder")
+            
             # Update status
             metrics = {
                 'total_shorelines': len(geo_files),
@@ -414,7 +434,9 @@ class ShorelineFiltering(PipelineStep):
                 'filtered_files': filtered_geo_files,
                 'defective_files': defective_files,
                 'total_files': len(geo_files),
-                'shoreline_path': shoreline_path
+                'shoreline_path': shoreline_path,
+                'filtered_shorelines_path': filtered_shorelines_path,
+                'copied_files': copied_files
             }
             
         except Exception as e:
@@ -533,12 +555,12 @@ class TidalCorrection(PipelineStep):
         """Setup system paths for tidal correction."""
         sys.path.append(self.config['system_paths']['littoral_src'])
     
-    def run(self, filtered_shoreline_files: List[str]) -> Dict[str, Any]:
+    def run(self, filtered_shoreline_files: List[str] = None) -> Dict[str, Any]:
         """
         Run tidal correction process.
         
         Args:
-            filtered_shoreline_files: List of filtered shoreline files to correct
+            filtered_shoreline_files: Optional list of filtered shoreline files (for backward compatibility)
             
         Returns:
             Dictionary with correction results
@@ -553,12 +575,27 @@ class TidalCorrection(PipelineStep):
             if not os.path.exists(tidal_corrections_csv):
                 raise FileNotFoundError(f"Tidal corrections file not found: {tidal_corrections_csv}")
             
-            shoreline_path = self.config.get_folder_path('shoreline')
+            # Get filtered shoreline files from FILTERED_SHORELINES folder
+            filtered_shorelines_path = self.config.get_folder_path('filtered_shorelines')
             
-            # Apply tidal corrections
+            if not os.path.exists(filtered_shorelines_path):
+                raise FileNotFoundError(f"Filtered shorelines folder not found: {filtered_shorelines_path}")
+            
+            # Get all CSV files from the filtered shorelines folder
+            available_filtered_files = [f for f in os.listdir(filtered_shorelines_path) if f.endswith('.csv')]
+            
+            if not available_filtered_files:
+                raise FileNotFoundError(f"No filtered shoreline files found in: {filtered_shorelines_path}")
+            
+            self.logger.info(f"Found {len(available_filtered_files)} filtered shoreline files")
+            
+            # Use files from FILTERED_SHORELINES folder (priority over passed parameter)
+            files_to_process = available_filtered_files
+            
+            # Apply tidal corrections using the filtered shorelines folder as source
             corrected_shoreline_paths = littoral_tide_correction.apply_tidal_corrections_to_shorelines(
-                filtered_shoreline_files=filtered_shoreline_files,
-                shoreline_path=shoreline_path,
+                filtered_shoreline_files=files_to_process,
+                shoreline_path=filtered_shorelines_path,  # Use filtered folder as source
                 tidal_corrections_path=tidal_corrections_csv,
                 output_folder="TIDAL_CORRECTED"
             )
@@ -586,7 +623,7 @@ class GeoJSONConversion(PipelineStep):
     """Converts processed shoreline data to GeoJSON format and uploads to cloud storage."""
     
     def __init__(self, config):
-        super().__init__(config, 'step_14_geojson_convert')
+        super().__init__(config, 'step_15_geojson_convert')
         self._setup_cloud_clients()
     
     def _setup_cloud_clients(self):
@@ -637,13 +674,13 @@ class GeoJSONConversion(PipelineStep):
             if not corrected_files:
                 corrected_files = []
                 
-                # Find geo-transformed files from SHORELINE folder
-                shoreline_dir = os.path.join(self.config.get_site_path(), "SHORELINE")
-                if os.path.exists(shoreline_dir):
-                    geo_files = glob.glob(os.path.join(shoreline_dir, "*_geo.csv"))
+                # Find geo-transformed files from FILTERED_SHORELINES folder
+                filtered_shorelines_dir = os.path.join(self.config.get_site_path(), "FILTERED_SHORELINES")
+                if os.path.exists(filtered_shorelines_dir):
+                    geo_files = glob.glob(os.path.join(filtered_shorelines_dir, "*_geo.csv"))
                     corrected_files.extend(geo_files)
                     if geo_files:
-                        self.logger.info(f"Found {len(geo_files)} geo-transformed files in SHORELINE folder")
+                        self.logger.info(f"Found {len(geo_files)} geo-transformed files in FILTERED_SHORELINES folder")
                 
                 # Find tidally corrected files from TIDAL_CORRECTED folder
                 tidal_corrected_dir = os.path.join(self.config.get_site_path(), "TIDAL_CORRECTED")

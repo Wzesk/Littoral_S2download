@@ -47,6 +47,7 @@ class PipelineConfig:
                 "clear_output": "CLEAR",
                 "clear_tiff": "/TARGETS/cloudless",
                 "shoreline": "SHORELINE",
+                "filtered_shorelines": "FILTERED_SHORELINES",
                 "tidal_corrected": "TIDAL_CORRECTED"
             },
             

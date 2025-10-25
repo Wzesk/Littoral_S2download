@@ -298,9 +298,8 @@ class ImageDownloader(PipelineStep):
             df['step_1_download'] = 'success'
             
             # Initialize all other steps as pending
-            for i in range(2, 15):
+            for i in [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
                 step_names = {
-                    2: 'step_2_filter',
                     3: 'step_3_coregister', 
                     4: 'step_4_cloud_impute',
                     5: 'step_5_rgb_nir_creation',
@@ -312,7 +311,8 @@ class ImageDownloader(PipelineStep):
                     11: 'step_11_geotransform',
                     12: 'step_12_filter_shorelines',
                     13: 'step_13_tide_model',
-                    14: 'step_14_tide_correct'
+                    14: 'step_14_tide_correct',
+                    15: 'step_15_geojson_convert'
                 }
                 if i in step_names:
                     df[step_names[i]] = 'pending'
@@ -541,8 +541,8 @@ class Normalization(PipelineStep):
             min_thresh = self.config['processing']['normalization']['min_threshold']
             max_thresh = self.config['processing']['normalization']['max_threshold']
             
-            # Find NIR images
-            nir_images = glob.glob(os.path.join(up_folder, '*_nir_up.png'))
+            # Find NIR images where the name contain the string nir_x
+            nir_images = glob.glob(os.path.join(up_folder, '*_nir_x*.png'))
             
             normalized_files = []
             skipped_files = []

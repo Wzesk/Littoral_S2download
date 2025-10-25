@@ -17,19 +17,19 @@ The Littoral Processing Pipeline converts the Jupyter notebook workflow into a r
 The pipeline consists of 14 main processing steps:
 
 1. **Download Imagery** - Download satellite images using Earth Engine
-2. **Filter** - Initial image filtering
-3. **Coregister** - Image coregistration for alignment
-4. **Cloud Imputation** - Remove clouds from images using VPint
-5. **RGB/NIR Creation** - Create RGB and NIR composites from cloud-free data
-6. **Upsampling** - Enhance image resolution using Real-ESRGAN
-7. **Normalization** - Normalize images and remove defective ones
-8. **Segmentation** - Segment shorelines using YOLO
-9. **Boundary Extraction** - Extract boundaries from segmentation masks
-10. **Boundary Refinement** - Refine and smooth extracted boundaries
-11. **Geotransformation** - Transform boundaries to geographic coordinates
-12. **Shoreline Filtering** - Filter and validate shorelines
-13. **Tidal Modeling** - Model tidal corrections using FES2022
-14. **Tidal Correction** - Apply tidal corrections to shorelines
+2. **Coregister** - Image coregistration for alignment
+3. **Cloud Imputation** - Remove clouds from images using VPint
+4. **RGB/NIR Creation** - Create RGB and NIR composites from cloud-free data
+5. **Upsampling** - Enhance image resolution using Real-ESRGAN
+6. **Normalization** - Normalize images and remove defective ones
+7. **Segmentation** - Segment shorelines using YOLO
+8. **Boundary Extraction** - Extract boundaries from segmentation masks
+9. **Boundary Refinement** - Refine and smooth extracted boundaries
+10. **Geotransformation** - Transform boundaries to geographic coordinates
+11. **Shoreline Filtering** - Filter and validate shorelines
+12. **Tidal Modeling** - Model tidal corrections using FES2022
+13. **Tidal Correction** - Apply tidal corrections to shorelines
+14. **GeoJSON Convert** - Convert processed shorelines to GeoJSON format and upload metadata
 
 ## Installation
 
