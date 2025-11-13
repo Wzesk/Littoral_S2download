@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.dates as mdates
 
+from shapely.geometry import Polygon
+from pyproj import Transformer
+
 # Import optional dependencies conditionally
 try:
     from sklearn.cluster import DBSCAN
@@ -721,15 +724,17 @@ class GeoJSONConversion(PipelineStep):
                     
                     if geojson_data:
                         # Generate file names based on file type
+                        # Include site name to ensure unique filenames across sites
+                        site_name = self.config['site_name']
                         if file_type == "tidally_corrected":
                             base_name = filename.replace('_tidal_corrected.csv', '')
-                            geojson_filename = f"{base_name}_tidally_corrected.geojson"
+                            geojson_filename = f"{site_name}_{base_name}_tidally_corrected.geojson"
                         elif file_type == "geo_transformed":
                             base_name = filename.replace('_geo.csv', '')
-                            geojson_filename = f"{base_name}_geo.geojson"
+                            geojson_filename = f"{site_name}_{base_name}_geo.geojson"
                         else:
                             base_name = filename.replace('.csv', '')
-                            geojson_filename = f"{base_name}.geojson"
+                            geojson_filename = f"{site_name}_{base_name}.geojson"
                         
                         # Upload to cloud storage
                         public_url = self._upload_geojson(geojson_data, geojson_filename)
@@ -905,7 +910,10 @@ class GeoJSONConversion(PipelineStep):
             
             # Calculate total length (approximate)
             total_length_m = self._calculate_line_length(coordinates)
-            
+
+            # Calculate total area (approximate)
+            total_area_m2 = self._calculate_shoreline_area(coordinates)
+
             # Create bounding box
             lons = [coord[0] for coord in coordinates]
             lats = [coord[1] for coord in coordinates]
@@ -947,6 +955,7 @@ class GeoJSONConversion(PipelineStep):
                 'geojson_path': public_url,
                 'simplified_geometry': feature['geometry'],  # Use the full geometry for ST_GEOGFROMGEOJSON
                 'shoreline_length_m': total_length_m,
+                'area_enclosed_m2': total_area_m2,
                 'tide_corrected': is_tide_corrected,
                 'processing_pipeline_version': 'littoral_pipeline_v2_standardized_metadata',
                 'metadata': {
@@ -994,6 +1003,26 @@ class GeoJSONConversion(PipelineStep):
             self.logger.error(f"Error calculating line length: {e}")
             return 0.0
     
+    def _calculate_shoreline_area(self, coordinates) -> float:
+        """Calculate approximate area of shoreline square meters."""
+        total_area = 0.0
+        try:
+            from shapely.geometry import Polygon
+            from pyproj import Transformer
+            
+            # Convert coordinates to a projected system for area calculation
+            transformer = Transformer.from_crs("EPSG:4326", "EPSG:32643", always_xy=True)
+            projected_coords = [transformer.transform(lon, lat) for lon, lat in coordinates]
+            
+            # Create polygon and calculate area
+            polygon = Polygon(projected_coords)
+            total_area = polygon.area  # Area in square meters
+
+            return total_area
+        except Exception as e:
+            self.logger.error(f"Error calculating shoreline area: {e}")
+            return total_area        
+
     def _upload_to_bigquery(self, metadata_records: List[Dict[str, Any]]) -> int:
         """Upload metadata records to BigQuery, replacing existing records with same site_id and timestamp."""
         try:

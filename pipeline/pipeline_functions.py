@@ -274,11 +274,10 @@ class ImageDownloader(PipelineStep):
             # Connect to Earth Engine
             ee_s2.connect()
             
-            # Load site parameters
-            proj_params = littoral_sites.load_site_parameters_cg(
+            # Load site parameters (respects LITTORAL_SITES_SOURCE env var for BigQuery/CSV)
+            proj_params = littoral_sites.load_site_parameters(
                 self.config['site_name'], 
-                self.config['save_path'], 
-                self.config['site_table_path']
+                self.config['save_path']
             )
             
             # Get filtered image collection

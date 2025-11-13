@@ -47,6 +47,8 @@ import traceback
 
 # Add pipeline modules to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add src directory so 'littoral' package can be imported when running from repo root
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 from pipeline.pipeline_config import PipelineConfig, create_example_config
 from pipeline.pipeline_orchestrator import PipelineOrchestrator
@@ -160,11 +162,26 @@ def parse_arguments():
         action='store_true',
         help='Only generate and display summary report (no processing)'
     )
+
+    # Site source options
+    source_group = parser.add_argument_group('Site Source Options')
+    source_group.add_argument(
+        '--sites-source',
+        choices=['bigquery', 'csv'],
+        default='bigquery',
+        help='Source for site metadata (default: bigquery)'
+    )
+    source_group.add_argument(
+        '--bq-table',
+        type=str,
+        default='useful-theory-442820-q8.shoreline_metadata.islands',
+        help='Fully qualified BigQuery table for site metadata (project.dataset.table)'
+    )
     
     return parser.parse_args()
 
 
-def list_available_sites(site_table_path: Optional[str] = None):
+def list_available_sites(site_table_path: Optional[str] = None, sites_source: str = 'bigquery', bq_table: str = 'littoral-375622.coastal_viewer_static.islands_metadata'):
     """
     List all available sites from the site table.
     
@@ -174,18 +191,31 @@ def list_available_sites(site_table_path: Optional[str] = None):
     try:
         import pandas as pd
         
-        # Use default site table path if not specified
-        if site_table_path is None:
-            config = PipelineConfig()
-            site_table_path = config['site_table_path']
-        
-        # Check if site table exists
-        if not os.path.exists(site_table_path):
-            print(f"❌ Site table not found: {site_table_path}")
-            return
-        
-        # Load site data directly with pandas
-        sites_df = pd.read_csv(site_table_path)
+        if sites_source == 'bigquery':
+            try:
+                from google.cloud import bigquery
+                import google.auth
+                
+                # Use google.auth.default() for proper authentication (matches working notebook)
+                credentials, project_id = google.auth.default()
+                client = bigquery.Client(credentials=credentials, project=project_id)
+                
+                query = f"SELECT * FROM `{bq_table}`"
+                sites_df = client.query(query).to_dataframe()
+                if 'site_name' not in sites_df.columns and 'name' in sites_df.columns:
+                    sites_df = sites_df.rename(columns={'name': 'site_name'})
+            except Exception as e:
+                print(f"❌ Failed to load sites from BigQuery ({e}). Falling back to CSV.")
+                sites_source = 'csv'
+        if sites_source == 'csv':
+            # Use default site table path if not specified
+            if site_table_path is None:
+                config = PipelineConfig()
+                site_table_path = config['site_table_path']
+            if not os.path.exists(site_table_path):
+                print(f"❌ Site table not found: {site_table_path}")
+                return
+            sites_df = pd.read_csv(site_table_path)
         
         if 'site_name' not in sites_df.columns:
             print(f"❌ Site table does not contain 'site_name' column")
@@ -195,7 +225,10 @@ def list_available_sites(site_table_path: Optional[str] = None):
         site_names = sites_df['site_name'].tolist()
         
         print(f"📍 Available Sites ({len(site_names)} total):")
-        print(f"   Site table: {site_table_path}")
+        if sites_source == 'bigquery':
+            print(f"   Source: BigQuery table {bq_table}")
+        else:
+            print(f"   Source: CSV {site_table_path}")
         print()
         
         # Display sites with additional information if available
@@ -219,8 +252,8 @@ def list_available_sites(site_table_path: Optional[str] = None):
             
             print("   " + " | ".join(info_parts))
         
-        print(f"\n💡 Usage: python {os.path.basename(__file__)} --site SITE_NAME")
-        
+        print(f"\n💡 Usage: python {os.path.basename(__file__)} --site SITE_NAME [--sites-source bigquery|csv]")
+
     except Exception as e:
         print(f"❌ Error reading site table: {e}")
         logging.debug(f"Full error: {traceback.format_exc()}")
@@ -348,7 +381,7 @@ def main():
     
     # Handle list sites
     if args.list_sites:
-        list_available_sites(args.site_table)
+        list_available_sites(args.site_table, args.sites_source, args.bq_table)
         return 0
     
     # Setup basic logging
@@ -358,6 +391,11 @@ def main():
     try:
         # Create configuration
         config = create_config_from_args(args)
+
+        # Set environment variables to control site source for downstream functions
+        os.environ['LITTORAL_SITES_SOURCE'] = args.sites_source
+        if args.sites_source == 'bigquery' and args.bq_table:
+            os.environ['LITTORAL_SITES_TABLE'] = args.bq_table
         
         # Handle summary-only mode
         if args.summary_only:
@@ -369,9 +407,10 @@ def main():
         # Validate and display configuration
         if not validate_and_display_config(config, args.force):
             # Display available sites if site not found
-            if args.site and os.path.exists(config['site_table_path']):
+            if args.site:
+                # Attempt listing with chosen source
                 print("\n")
-                list_available_sites(config['site_table_path'])
+                list_available_sites(config.get('site_table_path'), args.sites_source, args.bq_table)
             return 1
         
         # Handle dry run
